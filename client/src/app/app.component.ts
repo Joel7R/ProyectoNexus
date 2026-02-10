@@ -5,21 +5,22 @@
 import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { NavbarComponent } from './components/navbar/navbar.component';
+import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { NexusSidebarComponent } from './components/nexus-sidebar/nexus-sidebar.component';
 import { NexusService } from './services/nexus.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, NavbarComponent, NexusSidebarComponent],
+  imports: [RouterOutlet, NavbarComponent, SidebarComponent, NexusSidebarComponent],
   template: `
     <div class="nexus-container">
       <!-- Star Background & Scanlines -->
       <div class="cyber-grid"></div>
       <div class="scanline-overlay"></div>
     
-      <!-- Navigation -->
-      <app-navbar></app-navbar>
+      <!-- Sidebar Navigation -->
+      <app-sidebar></app-sidebar>
 
       <!-- Main Content -->
       <main class="nexus-main">
@@ -39,7 +40,7 @@ import { NexusService } from './services/nexus.service';
   styles: [`
     .nexus-container {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       height: 100vh;
       background: var(--bg-primary);
       position: relative;
@@ -48,7 +49,8 @@ import { NexusService } from './services/nexus.service';
 
     .nexus-main {
       flex: 1;
-      overflow-y: auto; /* Allow scrolling for content like News */
+      margin-left: 260px; /* Sidebar width */
+      overflow-y: auto;
       position: relative;
       display: flex;
       flex-direction: row;
@@ -66,7 +68,7 @@ import { NexusService } from './services/nexus.service';
       border-left: 1px solid var(--border-color);
       background: var(--bg-secondary);
       animation: slide-in 0.3s ease;
-      position: absolute; /* Optional: make it overlay or push content */
+      position: absolute;
       right: 0;
       top: 0;
       bottom: 0;
@@ -76,6 +78,13 @@ import { NexusService } from './services/nexus.service';
     @keyframes slide-in {
       from { transform: translateX(100%); opacity: 0; }
       to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nexus-main {
+        margin-left: 80px; /* Collapsed sidebar */
+      }
     }
   `]
 })

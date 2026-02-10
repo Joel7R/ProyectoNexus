@@ -9,29 +9,31 @@ from dataclasses import dataclass
 import ollama
 
 
-SYSTEM_PROMPT = """Eres el Orquestador de 'Gaming Nexus', una IA especializada EXCLUSIVAMENTE en videojuegos. 
+SYSTEM_PROMPT = """Eres el Orquestador de 'Gaming Nexus', IA especialista en videojuegos.
 
-REGLAS DE INTERPRETACIÓN:
-1. **Prioridad Gaming**: Todo prompt debe ser interpretado dentro del contexto de los videojuegos.
-2. **Noticias Generales**: Si el usuario pide "noticias", "novedades" o "qué hay de nuevo" sin especificar un juego, usa "Gaming Industry" como nombre del juego y categoría "news". **JAMÁS** rechaces una búsqueda de noticias genérica.
-3. **Identificación**: Si no se menciona el juego pero sí elementos (ej: "Yasuo", "Ranni", "V-Bucks"), identifica el juego correspondiente.
-4. **Títulos Completos**: Intenta usar el nombre oficial completo del juego si lo conoces (ej: 'Clair Obscur: Expedition 33' en lugar de solo 'Expedition 33').
-5. **Juegos Nuevos**: Si el juego no ha salido o es muy reciente, ajusta el `search_query` para incluir "preview", "news" o "mechanics" si la categoría es "guide" o "build".
+TU OBJETIVO:
+1. Analizar la intención del usuario.
+2. Detectar el IDIOMA del usuario (es, en, fr, etc.).
+3. Generar una `search_query` optimizada.
 
-REGLA DE SEGURIDAD (REJECT): 
-- Usa "REJECT" como nombre del juego SOLO si el usuario pregunta por temas totalmente ajenos (ej: cocina, política, medicina, consejos de amor, tareas escolares no relacionadas).
-- En el campo `search_query` de un REJECT, explica brevemente por qué es off-topic.
+LOGICA DE BÚSQUEDA (CLR - Cross Language Retrieval):
+- Si el usuario busca "builds", "parches", "stats", "tier list" o datos técnicos:
+  GENERA LA `search_query` EN INGLÉS, independientemente del idioma del usuario.
+  (Ej: User: "mejor build yasuo" -> Query: "Yasuo best build s14 guide")
+  (Esto es vital para encontrar datos de calidad en wikis globales).
 
-Responde SOLO en formato JSON:
+- Si el usuario busca "noticias" o "eventos":
+  Mantén el idioma original para encontrar noticias locales, o usa inglés si busca fuentes primarias.
+
+FORMATO JSON:
 {
     "game": "nombre del juego o 'Gaming Industry' o 'REJECT'",
     "category": "news|build|guide",
     "version": "versión o null",
-    "search_query": "query optimizada (ej: 'videojuegos noticias hoy' o 'Elden Ring DLC update')",
+    "search_query": "query optimizada (EN para builds/tech, ES para noticias locales)",
+    "language": "código iso (es, en)",
     "confidence": 0.0-1.0
-}
-
-Si es una continuación ("¿y cómo lo equipo?"), usa "FOLLOW_UP" como juego."""
+}"""
 
 
 @dataclass
@@ -41,6 +43,7 @@ class IntentResult:
     category: Literal["news", "build", "guide"]
     version: str | None
     search_query: str
+    language: str
     confidence: float
     is_followup: bool = False
 
@@ -86,6 +89,7 @@ class IntentOrchestrator:
                 category=result.get("category", "build"),
                 version=result.get("version"),
                 search_query=result.get("search_query", user_message),
+                language=result.get("language", "es"),
                 confidence=result.get("confidence", 0.5),
                 is_followup=is_followup
             )
@@ -127,6 +131,7 @@ class IntentOrchestrator:
             category=category,
             version=None,
             search_query=message,
+            language="es",
             confidence=0.3,
             is_followup=False
         )

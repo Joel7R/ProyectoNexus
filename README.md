@@ -1,118 +1,168 @@
 # 🎮 Gaming Nexus: Real-Time AI Assistant
 
-![Gaming Nexus Banner](https://img.shields.io/badge/Status-Active-brightgreen)
-![Angular](https://img.shields.io/badge/Frontend-Angular%2017-dd0031)
-![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688)
-![Ollama](https://img.shields.io/badge/AI-Ollama%20(Llama%203.2)-blue)
+[![Status](https://img.shields.io/badge/Status-Beta-brightgreen?style=for-the-badge&logoColor=white)]()
+[![Tech Stack](https://img.shields.io/badge/Stack-Angular_17_%7C_FastAPI-blue?style=for-the-badge)]()
+[![LLM](https://img.shields.io/badge/LLM-Ollama_Llama_3.2-orange?style=for-the-badge&logoColor=white)]()
+[![License](https://img.shields.io/badge/License-MIT-blueviolet?style=for-the-badge)]()
 
-**Gaming Nexus** es un sistema de vanguardia diseñado para el jugador moderno. Utiliza agentes de IA orquestados con **LangGraph** para extraer información crucial (builds, parches, guías, noticias) directamente de la web en tiempo real, eliminando la dependencia de bases de conocimiento estáticas.
-
----
-
-## ✨ Características Principales
-
-### 🔴 Transmisiones en Vivo (News)
-Sección de noticias de última hora que escanea la web en busca de anuncios importantes, notas de parches y eventos de E-Sports.
--   **Categorías**: General, Patches, Releases, E-Sports.
--   **IA Activa**: El `NewsScoutAgent` sintetiza múltiples fuentes para ofrecer resúmenes ejecutivos.
-
-### 📅 Calendario de Lanzamientos
-Visualización interactiva de los próximos grandes lanzamientos de la industria.
--   **Timeline**: Vista cronológica de juegos esperados.
--   **Sincronización**: Datos frescos obtenidos mediante scraping en tiempo real.
-
-### 💬 Asistente IA Avanzado (Chat)
-Interface de chat con **Streaming SSE** que permite ver el proceso de razonamiento del agente.
--   **Tactician**: Especialista en builds y meta de cualquier juego competitivo.
--   **GuideNavigator**: Guías detalladas paso a paso para misiones y jefes.
--   **Vision Artifacts**: Los agentes generan cuadros técnicos y paneles laterales para info detallada.
-
-### ✉️ Newsletter (Próximamente)
-Suscríbete para recibir un resumen diario de lo más importante en tu correo cada mañana a las 8:00 AM.
+> **Gaming Nexus** is a state-of-the-art AI-powered HUD for gamers. It orchestrates specialized agents to deliver news, play-time estimates, price comparisons, and deep lore insights through a stunning Cyber-Dark aesthetic.
 
 ---
 
-## 🛠️ Arquitectura del Sistema
+## 🏗️ Architecture Deep Dive
+
+The system utilizes an **Agentic Workflow** orchestrated via **LangGraph**. User queries are analyzed by an Intent Orchestrator that routes requests to specialized sub-agents, leveraging a **Cross-Language Retrieval (CLR)** strategy to maximize data quality.
 
 ```mermaid
 graph TD
-    A[Angular 17 Client] -->|SSE/REST| B[FastAPI Server]
-    B --> C[Orchestrator Agent]
-    C --> D[NewsScout]
-    C --> E[Tactician]
-    C --> F[GuideNavigator]
-    D & E & F --> G[DuckDuckGo Search]
-    D & E & F --> H[Web Scraper]
-    D & E & F --> I[Ollama / Llama 3.2]
-```
+    subgraph "Frontend (Client Side)"
+        UI["Angular 17 HUD"] --> Signals["Signals State Management"]
+        Signals --> Theme["Cyber-Dark CSS Engine"]
+    end
 
-### Tecnologías
--   **Frontend**: Angular 17+ (Signals, Standalone Components, CSS Variables).
--   **Backend**: Python, FastAPI, LangGraph, sse-starlette.
--   **Búsqueda**: Crawling en tiempo real con filtrado de spam y contenido no-gaming.
--   **LLM**: Ollama (Local) para privacidad y velocidad.
+    subgraph "Backend (Server Side)"
+        API["FastAPI Entrypoint"] --> Orch["Orchestrator (LangGraph)"]
+        Orch --> Ollama["Ollama (Llama 3.2)"]
+        
+        Orch --> NS["NewsScout Agent"]
+        Orch --> TE["TimeEstimator Agent"]
+        Orch --> DS["DealScout Agent"]
+        Orch --> CM["Chronos (Lore Master)"]
+
+        NS --> DDG["DuckDuckGo Search"]
+        TE --> HLTB["HLTB Integration"]
+        DS --> Stores["Steam / Epic / GOG"]
+        CM --> Wiki["Lore Wikis & Mermaid"]
+    end
+
+    subgraph "Cross-Language Logic"
+        Translate["ES Prompt"] --> EnglishQuery["Optimized EN Search"]
+        EnglishQuery --> Context["Global Data Context"]
+        Context --> Response["Synthesized ES Response"]
+    end
+```
 
 ---
 
-## 🚀 Instalación y Configuración
+## 🚀 Feature Showcase
 
-### Requisitos Previos
--   **Python 3.11+**
--   **Node.js 18+**
--   **Ollama** (Servicio activo)
+| Tab | Specialized Agent | Toolset | Feature Highlights |
+| :--- | :--- | :--- | :--- |
+| **📰 News Tracker** | `NewsScout` | DuckDuckGo, NLP | Multi-source aggregation, language badges, "See Original" link. |
+| **⏱️ Time2Play** | `TimeEstimator` | HLTB, Search | Main Story/Completionist estimates, Backlog Manager, Marathon Mode. |
+| **💰 Price Hunter** | `DealScout` | Scrapers, DDG | Real-time comparison, **Neon Best-Deal Highlight**, 7-day Cache. |
+| **📖 Lore Master** | `Chronos` | Wiki Parser | **Spoiler Shield (Blur)**, 3 Spoiler Levels, Mermaid Character Maps. |
+| **💬 AI Chat Hub** | `Orchestrator` | LangGraph, Ollama | Context-aware routing, session history, artifact visualization. |
 
-### 1. Preparar el Backend
+---
+
+## 🛠️ Tech Stack & Multilingual Logic
+
+### Technical Foundation
+- **Frontend**: **Angular 17** with Standalone Components and **Signals** for reactive UI.
+- **Backend**: **FastAPI** high-performance Python framework with SSE (Server-Sent Events) for streaming.
+- **Orchestration**: **LangGraph** for stateful multi-agent workflows.
+- **AI Model**: **Ollama** running **Llama 3.2** locally.
+
+### 🌐 Cross-Language Retrieval (CLR)
+We implemented a proprietary logic where the Orchestrator translates technical intents (like "builds", "guides", or "stats") into **English queries** regardless of the user's input language.
+- **Reason**: English gaming wikis contain 10x more granular data.
+- **Result**: The agent fetches high-quality global data, synthesizes it using the LLM, and presents the final insight in the user's native language.
+
+---
+
+## ⚙️ Installation & Setup
+
+### 1. Prerequisites
+- [Ollama](https://ollama.com/) installed and running.
+- Python 3.10+ and Node.js 18+.
+
+### 2. Ollama Configuration
+```bash
+ollama pull llama3.2
+```
+
+### 3. Backend Setup
 ```bash
 cd server
 python -m venv venv
-source venv/bin/activate  # venv\Scripts\activate en Windows
+source venv/bin/activate # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
 ```
 
-#### Variables de Entorno (.env)
-Crea un archivo `.env` en `server/`:
-```env
-OLLAMA_MODEL=llama3.2
-OLLAMA_BASE_URL=http://localhost:11434
-CORS_ORIGINS=http://localhost:4200
-EMAIL_PASSWORD=qrkk_spee_jyhu_pqnm  # Nexus App Password
-```
-
-### 2. Preparar el Frontend
+### 4. Frontend Setup
 ```bash
 cd client
 npm install
 ```
 
----
-
-## 🏃 Cómo Ejecutar
-
-1.  **Ollama**: `ollama run llama3.2`
-2.  **Backend**: `cd server && python main.py` (Puerto 8000)
-3.  **Frontend**: `cd client && npm start` (Puerto 4200)
-
----
-
-## 📊 API Referencia
-
-| Método | Endpoint | Descripción |
-| :--- | :--- | :--- |
-| `POST` | `/api/chat/stream` | Comunicación bilateral con streaming de agentes |
-| `POST` | `/api/news` | Obtiene noticias por categoría (NewsScout) |
-| `GET` | `/api/calendar` | Listado de juegos próximos (Game Scout) |
-| `GET` | `/api/chat/history/{id}` | Recupera la memoria de una sesión |
-| `POST` | `/api/newsletter/subscribe`| Registro para noticias diarias |
+### 5. Environment Variables
+Create a `.env` file in the `server` directory:
+```env
+OLLAMA_MODEL=llama3.2
+OLLAMA_BASE_URL=http://localhost:11434
+CORS_ORIGINS=http://localhost:4200
+```
 
 ---
 
-## 🎨 Diseño: Cyber-Dark Mode
-El proyecto utiliza una estética **Neon/Cyberpunk** definida en `styles.scss`:
--   **Primary (Cyan)**: `#00f3ff` (Interactividad)
--   **Background**: `#050505` (Inmersión)
--   **Scanlines**: Efecto de rejilla retro-futurista integrado en el layout.
--   **Glow**: Efectos de luminiscencia en botones y tarjetas.
+## 🎨 Estética & Design System: Cyber-Dark HUD
+
+The visual language of Gaming Nexus is inspired by **high-tech military HUDs** and **Cyberpunk aesthetics**.
+
+- **Palette**: 
+  - Primary: `Cyan (#00f3ff)` for data and focus.
+  - Secondary: `Purple (#bc13fe)` for lore and mysticism.
+  - Success: `Neon Green (#39ff14)` for the best game deals.
+  - UI: `Gold (#ffcc00)` for search and premium features.
+- **Components**: Glassmorphism with 20px blur, background scanlines, and authentic CRT noise overlay.
+- **Vision Artifacts**: A side-panel system that renders rich visual data (graphs, tables, code) without breaking the chat flow.
 
 ---
 
-Desarrollado con ❤️ para la comunidad gaming.
+---
+
+## 🔍 Module Deep Dives
+
+### ⏱️ Time2Play (HowLongToBeat)
+Integrated system for game completion estimates and backlog management.
+- **Marathon Mode**: Calculate days to finish based on your daily playtime (e.g., "2.5h/day → 56 days").
+- **Backlog Manager**: Aggregate total completion time for multiple titles.
+- **Worth Badges**: Dynamic valuation (💎 Excellent, 👍 Good, 👌 Fair, 💸 Expensive) based on price-to-hour ratio.
+- **API Endpoints**:
+  - `POST /api/hltb/game` - Single game stats.
+  - `POST /api/hltb/backlog` - Batch calculation.
+  - `POST /api/hltb/marathon` - Playtime planning.
+
+### 💰 Price Hunter (DealScout)
+Real-time web monitoring of game prices across popular storefronts.
+- **Multi-Store Search**: Steam, Epic, GOG, and Instant Gaming.
+- **Best-Deal Detection**: Automatically identifies the lowest price with neon green visual highlighting.
+- **Currency Intelligence**: Standardized pricing for accurate comparison.
+- **API Endpoints**:
+  - `POST /api/deals/search` - Global store search.
+  - `POST /api/deals/compare` - Target store comparison.
+
+### 📖 Lore Master (Chronos)
+Contextual story retrieval with intelligent spoiler protection.
+- **Spoiler Shield**: 3 levels of protection (`none`, `light`, `full`) with manual reveal (Blur filter).
+- **Character Mapping**: Generates **Mermaid.js** diagrams of character relationships.
+- **Source Citations**: Links to the original lore wikis and community databases.
+- **API Endpoints**:
+  - `POST /api/lore/story` - Narrative summary retrieval.
+  - `POST /api/lore/characters` - Relationship extraction.
+
+---
+
+## 🧠 Reasoning Process: The Orchestrator
+
+The `Orchestrator` agent acts as the brain of the nexus. When a message is received:
+1. **Intention Mapping**: Categorizes the prompt into `news`, `time`, `deals`, or `lore`.
+2. **Tool Selection**: Based on the category, it delegates searching and scraping to the specialized agent.
+3. **State Management**: Uses LangGraph to keep track of the conversation context, ensuring that "Elden Ring" in the first query remains the context for "how long to beat it?" in the second.
+
+---
+
+> **Tip**: Use the **Spoiler Shield** in Lore Master to explore safely. Set your level to `none` if you just want the premise, or `full` if you've already beaten the game!
+
+Developed with 🎮 by the Gaming Nexus Team.

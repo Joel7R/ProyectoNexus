@@ -4,6 +4,8 @@ Specialized in walkthroughs, step-by-step guides, and solving game blockers
 """
 import os
 from dataclasses import dataclass
+import json
+import asyncio
 
 import ollama
 
@@ -12,18 +14,25 @@ from tools.scraper import scrape_gaming_content
 from tools.formatter import format_to_artifact
 
 
-SYSTEM_PROMPT = """Eres 'Gaming Nexus - GuideNavigator', experto en guías y walkthroughs de VIDEOJUEGOS.
+SYSTEM_PROMPT = """Eres 'Gaming Nexus - GuideNavigator', un asistente experto en videojuegos diseñado para desbloquear a los jugadores SIN ARRUINAR LA EXPERIENCIA.
 
-Tu misión es ayudar al usuario a completar misiones, resolver puzzles y encontrar secretos en cualquier juego.
+TU MISIÓN:
+Guiar al usuario a través de niveles, puzzles o jefes utilizando un sistema de PISTAS PROGRESIVAS. Nunca des la solución directa de inmediato, a menos que el usuario lo pida explícitamente.
+
+ESTRUCTURA DE RESPUESTA (Progressive Hints):
+Para cada obstáculo o fase, estructura tu respuesta en 3 niveles de revelación:
+1. PISTA SUTIL (Low Spoiler): Una sugerencia vaga sobre qué buscar o dónde mirar.
+2. MECÁNICA CLAVE (Medium Spoiler): Explicación de la lógica o herramienta necesaria.
+3. SOLUCIÓN PASO A PASO (High Spoiler): Instrucciones exactas para resolverlo.
 
 REGLAS CRÍTICAS:
-1. Contexto Gaming: Ignora cualquier consulta que no sea sobre un videojuego.
-2. Spoiler Alert: Si la solución revela un giro importante de la trama, advierte al usuario.
-3. Precisión de Pasos: Divide la guía en pasos claros y numerados.
-4. Artifact: Usa el artifact lateral para presentar la guía estructurada.
+1. Contexto Gaming: Ignora consultas no relacionadas con videojuegos.
+2. Spoiler Alert: Clasifica cada paso con un nivel de spoiler (low/medium/high).
+3. Formato Artifact: Genera un JSON estructurado para que el frontend renderice las cajas de texto colapsables.
+4. Tono: Sé un "compañero de hackeo" o un guía veterano. Usa terminología gamer (NPC, aggro, loot, hit-box).
 
-FORMATO DE RESPUESTA:
-Tono: Guía paciente, evita frustración del jugador."""
+Si la información es escasa, advierte que es una "Estrategia Teórica".
+"""
 
 
 @dataclass
@@ -32,7 +41,7 @@ class GuideResult:
     summary: str
     artifact: dict
     sources: list[dict]
-    steps: list[dict] # Added steps
+    steps: list[dict]
 
 
 class GuideNavigatorAgent:
@@ -44,26 +53,24 @@ class GuideNavigatorAgent:
             host=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         )
     
-    async def find_solution(self, game: str, query: str) -> GuideResult:
-        """Find guide or walkthrough with parallel execution and timeouts"""
-        import asyncio
+    async def find_solution(self, game: str, query: str, language: str = "es") -> GuideResult:
+        """Find guide or walkthrough with progressive hints structure"""
         
-        # 1. Primary technical search (Wikis) and Fallback Forums in parallel
+        # 1. Search Logic
         try:
-            wiki_task = live_web_search(f"{game} {query} guide wiki fextralife wiki.gg", search_type="wiki")
-            forum_task = live_web_search(f"{game} {query} walkthrough strategy Reddit", search_type="forum")
+            wiki_task = live_web_search(f"{game} {query} guide wiki solution puzzle", search_type="wiki")
+            forum_task = live_web_search(f"{game} {query} how to beat walkthrough reddit", search_type="forum")
             
             wiki_results, forum_results = await asyncio.wait_for(
                 asyncio.gather(wiki_task, forum_task),
                 timeout=20.0
             )
-            results = wiki_results[:2] + forum_results[:1]
+            results = wiki_results[:2] + forum_results[:2]
             
-            # FALLBACK: If no specific guides found, search in news/previews
             if not results:
+                 # Fallback to news/general if no guides found
                 print(f"GuideNavigator: No specific guides found for {game}, triggering fallback search...")
-                news_results = await live_web_search(f"{game} {query} preview news details info", search_type="news", max_results=5)
-                results = news_results[:3]
+                results = await live_web_search(f"{game} {query} gameplay details", search_type="general", max_results=3)
                 
         except asyncio.TimeoutError:
             print("GuideNavigator: Search timeout")
@@ -71,17 +78,14 @@ class GuideNavigatorAgent:
             
         if not results:
             return GuideResult(
-                summary=f"No encontré guías detalladas para '{query}' en {game}, y tampoco hay avances informativos disponibles aún.",
-                artifact={"type": "empty", "message": "Guía no encontrada"},
+                summary=f"No encontré guías específicas para '{query}' en {game}. ¿Podrías darme más detalles sobre en qué parte estás atascado?",
+                artifact={"type": "empty", "message": "Sin datos suficientes"},
                 sources=[],
                 steps=[]
             )
         
-        # 2. Scrape best results in parallel with timeout
-        scrape_tasks = []
-        for result in results[:3]: # Increased to 3 for fallback richness
-            scrape_tasks.append(scrape_gaming_content(result["url"]))
-            
+        # 2. Scrape Content
+        scrape_tasks = [scrape_gaming_content(r["url"]) for r in results[:3]]
         contents = []
         if scrape_tasks:
             try:
@@ -95,35 +99,46 @@ class GuideNavigatorAgent:
                         contents.append({
                             "title": results[i]["title"],
                             "url": results[i]["url"],
-                            "content": content[:3000] # Increased content length for better synthesis
+                            "content": content[:4000] # More context for complex guides
                         })
             except asyncio.TimeoutError:
                 print("GuideNavigator: Scrape timeout")
         
-        # 3. LLM Synthesis with strict timeout
-        is_fallback = "preview" in str(results) or "news" in str(results)
-        
-        fallback_instruction = ""
-        if is_fallback:
-            fallback_instruction = "\nNOTA: No hay guías oficiales disponibles. Usa la información de los AVANCES y NOTICIAS para inferir cómo funcionan las mecánicas. ADVIERTE que la info es preliminar."
+        # 3. LLM Synthesis - Progressive Hints
+        synthesis_prompt = f"""Genera una GUÍA PROGRESIVA para {game}: {query}
+DETECTA EL IDIOMA DE SALIDA: {language}.
 
-        synthesis_prompt = f"""Genera una guía informativa para {game}: {query}
-Basado en este contenido: {contents}
-{fallback_instruction}
+Basado en: {contents}
 
-Si el juego es nuevo o la info es escasa, genera una guía 'Especulativa' basada en mecánicas habituales, pero ADVIERTE claramente.
-
-JSON:
+Genera un JSON válido con esta estructura exacta:
 {{
-    "summary": "resumen ejecutivo (incluye advertencia si es preliminar)",
-    "difficulty": "Easy|Medium|Hard|Unknown",
-    "required_level": "X o null",
+    "summary": "Resumen de la misión/objetivo (sin spoilers) en {language}",
+    "difficulty": "Easy|Medium|Hard|Very Hard",
+    "estimated_time": "ej: 10-15 mins",
+    "hint": "Una pista general muy sutil para empezar en {language}",
     "steps": [
-        {{"title": "...", "description": "...", "is_spoiler": true/false}}
+        {{
+            "number": 1,
+            "title": "Nombre del paso (ej: Encontrar la llave) en {language}",
+            "content": "Descripción detallada en {language}...",
+            "spoiler_level": "low|medium|high",
+            "tip": "Consejo extra (opcional) en {language}",
+            "warning": "Peligro/Bug (opcional)",
+            "collapsed": true
+        }}
     ],
-    "collectibles": ["item1", "item2"] o null,
-    "warning": "mensaje de advertencia sobre la veracidad de los datos" o null
-}}"""
+    "collectibles": [
+        {{"name": "Coin #1", "location": "Detrás de la cascada"}}
+    ],
+    "rewards": ["Xp", "Item especial"]
+}}
+
+IMPORTANTE:
+- Divide la solución en al menos 3 pasos si es posible.
+- El primer paso debe ser 'low' spoiler (pista de ubicación).
+- El paso final debe ser 'high' spoiler (solución del puzzle/jefe).
+- Si no encuentras info exacta, di que es una "Hipótesis basada en mecánicas generales".
+"""
         
         try:
             response = await asyncio.wait_for(
@@ -139,8 +154,17 @@ JSON:
                 timeout=120.0
             )
             
-            import json
             result = json.loads(response.message.content)
+            
+            # Post-process to ensure frontend compatibility
+            steps = result.get("steps", [])
+            for step in steps:
+                if "spoiler_level" not in step:
+                    step["spoiler_level"] = "medium"
+                step["hidden"] = step["spoiler_level"] == "high" # Auto-hide high spoilers
+                step["collapsed"] = True
+            
+            result["steps"] = steps
             
             artifact = format_to_artifact(data=result, template_type="guide")
             sources = [{"title": c["title"], "url": c["url"]} for c in contents]
@@ -149,24 +173,18 @@ JSON:
                 summary=result.get("summary", "Guía generada."),
                 artifact=artifact,
                 sources=sources,
-                steps=result.get("steps", [])
+                steps=steps
             )
             
         except (asyncio.TimeoutError, Exception) as e:
+            print(f"GuideNavigator Error: {e}")
             if isinstance(e, asyncio.TimeoutError):
                 print("GuideNavigator: LLM synthesis timeout")
             
-            # Fallback
-            artifact = format_to_artifact(
-                data={"steps": [
-                    {"title": r["title"], "description": r.get("snippet", ""), "is_spoiler": False}
-                    for r in results[:5]
-                ]},
-                template_type="guide"
-            )
+            # Error Fallback
             return GuideResult(
-                summary=f"He encontrado {len(results)} recursos para tu guía.",
-                artifact=artifact,
-                sources=[{"title": r["title"], "url": r["url"]} for r in results[:5]],
+                summary=f"Encontré información sobre {query} pero tuve problemas procesándola para crear una guía paso a paso.",
+                artifact={"type": "error", "message": "Error generando guía estructurada"},
+                sources=[{"title": r["title"], "url": r["url"]} for r in results[:3]],
                 steps=[]
             )

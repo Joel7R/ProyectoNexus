@@ -46,7 +46,7 @@ class TacticianAgent:
             host=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         )
     
-    async def analyze(self, game: str, query: str, version: str | None = None) -> BuildResult:
+    async def analyze(self, game: str, query: str, version: str | None = None, language: str = "es") -> BuildResult:
         """Analyze builds and meta for a game"""
         
         # Build optimized search query - leverage engine's year biasing
@@ -104,13 +104,19 @@ class TacticianAgent:
         
         # Synthesize with LLM
         synthesis_prompt = f"""Analiza esta información sobre builds/meta de {game} para: {query}
+DETECTA EL IDIOMA DE SALIDA: {language}.
 
 Contenido:
 {contents}
 
+TU TAREA:
+1. Extrae la mejor build/estrategia.
+2. Responde en {language}, PERO MANTÉN EN INGLÉS LOS TÉRMINOS TÉCNICOS (Items, Runas, Skills, Stats) si es lo estándar en la comunidad.
+   (Ej: "Usa 'Infinity Edge' para más 'Crit Damage'", NO "Filo Infinito").
+
 Genera un JSON con:
 {{
-    "summary": "veredicto táctico de 1-2 líneas",
+    "summary": "veredicto táctico de 1-2 líneas en {language}",
     "character": "nombre del personaje/clase",
     "tier": "S/A/B/C/D",
     "win_rate": "XX%" o null,
@@ -122,7 +128,7 @@ Genera un JSON con:
         {{"name": "...", "description": "...", "max_first": true/false}}
     ],
     "runes": [...] o null,
-    "playstyle": "descripción breve del estilo de juego",
+    "playstyle": "descripción breve del estilo de juego en {language}",
     "counters": ["counter1", "counter2"] o null,
     "synergies": ["synergy1", "synergy2"] o null,
     "source_warning": "mensaje si la info es vieja" o null

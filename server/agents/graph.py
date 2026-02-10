@@ -94,7 +94,8 @@ class GamingNexusGraph:
         result = await self.news_scout.search(
             game=intent.game,
             query=intent.search_query,
-            version=intent.version
+            version=intent.version,
+            language=intent.language
         )
         state["agent_result"] = {
             "type": "news",
@@ -110,7 +111,8 @@ class GamingNexusGraph:
         result = await self.tactician.analyze(
             game=intent.game,
             query=intent.search_query,
-            version=intent.version
+            version=intent.version,
+            language=intent.language
         )
         state["agent_result"] = {
             "type": "build",
@@ -126,7 +128,8 @@ class GamingNexusGraph:
         intent = state["intent"]
         result = await self.guide_navigator.find_solution(
             game=intent.game,
-            query=intent.search_query
+            query=intent.search_query,
+            language=intent.language
         )
         state["agent_result"] = {
             "type": "guide",
@@ -141,6 +144,16 @@ class GamingNexusGraph:
         agent_result = state.get("agent_result", {})
         intent = state.get("intent")
         
+        # Validation override
+        if state.get("validation_failed"):
+            state["final_response"] = {
+                "message": agent_result.get("summary", "No pude encontrar información confiable. ¿Podrías darme más detalles?"),
+                "artifact": {"type": "error", "message": "Búsqueda sin resultados"},
+                "sources": [],
+                "context": {}
+            }
+            return state
+
         state["final_response"] = {
             "message": agent_result.get("summary", "Búsqueda completada."),
             "artifact": agent_result.get("artifact"),
@@ -153,6 +166,29 @@ class GamingNexusGraph:
         }
         return state
     
+    async def _validate_response_node(self, state: dict) -> dict:
+        """Validate agent output to prevent hallucinations"""
+        agent_result = state.get("agent_result", {})
+        
+        # Check for empty results or specific failure markers
+        is_empty = agent_result.get("artifact", {}).get("type") == "empty"
+        is_error = agent_result.get("artifact", {}).get("type") == "error"
+        has_no_sources = not agent_result.get("sources")
+        
+        if is_empty or (is_error and has_no_sources):
+            # If agent failed to find info, we shouldn't invent it.
+            # The agent itself usually provides a "Not found" summary, which is good.
+            # But we can flag it to ensure the UI handles it as a "Request for Clarification".
+            state["validation_failed"] = True
+            
+            # Refine summary if it's too generic
+            if len(agent_result.get("summary", "")) < 20:
+                 agent_result["summary"] = "No encontré resultados precisos en mi base de datos de conocimiento actual. ¿Podrías especificar el nombre del juego o la misión?"
+                 
+            state["agent_result"] = agent_result
+            
+        return state
+
     async def astream(
         self, 
         message: str, 
@@ -211,11 +247,6 @@ class GamingNexusGraph:
                 "content": agent_names.get(category, "Procesando...")
             }
             
-            yield {
-                "type": "thinking",
-                "content": agent_names.get(category, "Procesando...")
-            }
-            
             # Execute agent
             if category == "news":
                 yield {"type": "thinking", "content": "NewsScout: Buscando noticias en tiempo real..."}
@@ -227,6 +258,13 @@ class GamingNexusGraph:
                 yield {"type": "thinking", "content": "GuideNavigator: Consultando wikis y guías especializadas..."}
                 state = await self._guide_navigator_node(state)
         
+        # Validation
+        yield {"type": "thinking", "content": "Validando veracidad de los datos..."}
+        state = await self._validate_response_node(state)
+        
+        if state.get("validation_failed"):
+             yield {"type": "thinking", "content": "Advertencia: Datos insuficientes. Solicitando aclaración..."}
+
         yield {
             "type": "thinking", 
             "content": "Formateando resultados..."

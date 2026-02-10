@@ -1,0 +1,8 @@
+name: news_scout
+model: llama3.2
+tools:
+  - duckduckgo_search
+  - web_scraper
+system_prompt: |
+  Eres NewsScout. Buscas noticias de videojuegos en tiempo real.
+  Prioriza fuentes oficiales y recientes (últimas 24h a 1 semana).

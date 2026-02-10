@@ -1,16 +1,13 @@
-/**
- * Chat Stream Component
- * Real-time message visualization with thinking indicators
- */
 import { Component, inject, ElementRef, ViewChild, AfterViewChecked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NexusService, ChatMessage } from '../../services/nexus.service';
-import { DatePipe } from '@angular/common';
+import { DatePipe, CommonModule } from '@angular/common';
+import { TerminalLogComponent } from '../terminal-log/terminal-log.component';
 
 @Component({
   selector: 'app-chat-stream',
   standalone: true,
-  imports: [FormsModule, DatePipe],
+  imports: [FormsModule, DatePipe, CommonModule, TerminalLogComponent],
   template: `
     <div class="chat-container">
       <!-- Messages Area -->
@@ -18,20 +15,20 @@ import { DatePipe } from '@angular/common';
         @if (nexusService.messages().length === 0) {
           <div class="chat-welcome">
             <div class="chat-welcome__icon">🎮</div>
-            <h2 class="chat-welcome__title">Bienvenido a Gaming Nexus</h2>
+            <h2 class="chat-welcome__title">GAMING NEXUS</h2>
             <p class="chat-welcome__text">
-              Tu asistente de gaming con información en tiempo real.
-              Pregunta sobre builds, noticias, guías y más.
+              OPERATING SYSTEM ONLINE.
+              SELECT MISSION PARAMETERS.
             </p>
             <div class="chat-welcome__examples">
-              <button class="example-btn" (click)="sendExample('¿Cuál es el mejor build para Jinx en LoL?')">
-                🎯 Build de Jinx en LoL
+              <button class="example-btn glass-card" (click)="sendExample('¿Cuál es el mejor build para Jinx en LoL?')">
+                🎯 JINX BUILD_
               </button>
-              <button class="example-btn" (click)="sendExample('Últimas noticias de Elden Ring')">
-                📰 Noticias de Elden Ring
+              <button class="example-btn glass-card" (click)="sendExample('Últimas noticias de Elden Ring')">
+                📰 ELDEN RING NEWS_
               </button>
-              <button class="example-btn" (click)="sendExample('¿Cómo derrotar a Malenia en Elden Ring?')">
-                ⚔️ Guía para Malenia
+              <button class="example-btn glass-card" (click)="sendExample('¿Cómo derrotar a Malenia en Elden Ring?')">
+                ⚔️ GUIDE DATABASE_
               </button>
             </div>
           </div>
@@ -39,7 +36,7 @@ import { DatePipe } from '@angular/common';
         
         @for (message of nexusService.messages(); track message.id) {
           <div class="chat-message" [class]="'chat-message--' + message.role">
-            <div class="chat-message__avatar">
+            <div class="chat-message__avatar" [class.glow]="message.role === 'assistant'">
               @if (message.role === 'user') {
                 <span>👤</span>
               } @else if (message.role === 'thinking') {
@@ -51,18 +48,20 @@ import { DatePipe } from '@angular/common';
             <div class="chat-message__content">
               <div class="chat-message__header">
                 <span class="chat-message__role">
-                  {{ message.role === 'user' ? 'Tú' : message.role === 'thinking' ? 'Procesando' : 'Nexus' }}
+                  {{ message.role === 'user' ? 'USER_ID::COMMANDER' : message.role === 'thinking' ? 'PROCESSING...' : 'NEXUS_AI::RESPONSE' }}
                 </span>
-                <span class="chat-message__time">{{ message.timestamp | date:'HH:mm' }}</span>
+                <span class="chat-message__time">
+                    [{{ message.timestamp | date:'HH:mm:ss' }}]
+                </span>
               </div>
               <div class="chat-message__text" [innerHTML]="formatMessage(message.content)"></div>
               
               @if (message.sources && message.sources.length > 0) {
-                <div class="chat-message__sources">
-                  <span class="sources-label">📚 Fuentes:</span>
+                <div class="chat-message__sources glass-card">
+                  <span class="sources-label">> SOURCE_DATA_LINKED:</span>
                   @for (source of message.sources; track source.url) {
                     <a [href]="source.url" target="_blank" class="source-link">
-                      {{ source.title }}
+                      [{{ source.title }}]
                     </a>
                   }
                 </div>
@@ -73,7 +72,7 @@ import { DatePipe } from '@angular/common';
         
         <!-- Thinking Indicator -->
         @if (nexusService.isLoading()) {
-          <div class="chat-message chat-message--thinking">
+          <div class="chat-message chat-message--thinking glass-card">
             <div class="chat-message__avatar">
               <span class="thinking-icon">⚡</span>
             </div>
@@ -84,30 +83,31 @@ import { DatePipe } from '@angular/common';
                   <span></span>
                   <span></span>
                 </div>
-                <span class="thinking-text">{{ nexusService.thinkingStatus() || 'Procesando...' }}</span>
+                <span class="thinking-text">> ANALYZING DATA STREAMS... [{{ nexusService.thinkingStatus() || 'WAIT' }}]</span>
               </div>
-              @if (nexusService.elapsedTime() > 5) {
-                <div class="thinking-elapsed">
-                  <span class="elapsed-badge">{{ formatElapsedTime(nexusService.elapsedTime()) }}</span>
-                  <button class="cancel-btn" (click)="nexusService.cancelRequest()">
-                    ✕ Cancelar
-                  </button>
-                </div>
-              }
             </div>
           </div>
         }
       </div>
       
+      <!-- Terminal Log (Only visible if there are logs or loading) -->
+      @if (nexusService.isLoading() || mockLogs.length > 0) {
+          <app-terminal-log 
+            [logs]="mockLogs" 
+            [isThinking]="nexusService.isLoading()">
+          </app-terminal-log>
+      }
+
       <!-- Input Area -->
-      <div class="chat-input-container">
+      <div class="chat-input-container glass-card">
         <form (submit)="onSubmit($event)" class="chat-input-form">
+            <div class="input-prefix">></div>
           <input
             type="text"
             [(ngModel)]="inputMessage"
             name="message"
             class="chat-input"
-            placeholder="Pregunta sobre builds, noticias, guías..."
+            placeholder="ENTER COMMAND..."
             [disabled]="nexusService.isLoading()"
             autocomplete="off"
           />
@@ -116,15 +116,9 @@ import { DatePipe } from '@angular/common';
             class="chat-submit-btn"
             [disabled]="!inputMessage.trim() || nexusService.isLoading()"
           >
-            <span class="btn-icon">➤</span>
+            <span class="btn-icon">SEND_</span>
           </button>
         </form>
-        <div class="chat-input-footer">
-          <span class="footer-text">Powered by Ollama + LangGraph</span>
-          <button class="clear-btn" (click)="nexusService.clearHistory()">
-            🗑️ Limpiar
-          </button>
-        </div>
       </div>
     </div>
   `,
@@ -134,12 +128,15 @@ import { DatePipe } from '@angular/common';
       flex-direction: column;
       height: 100%;
       background: transparent;
+      padding: var(--spacing-md);
+      max-width: 1200px;
+      margin: 0 auto;
     }
     
     .chat-messages {
       flex: 1;
       overflow-y: auto;
-      padding: var(--spacing-lg);
+      padding-bottom: var(--spacing-md);
       display: flex;
       flex-direction: column;
       gap: var(--spacing-md);
@@ -159,22 +156,22 @@ import { DatePipe } from '@angular/common';
         font-size: 5rem;
         margin-bottom: var(--spacing-lg);
         filter: drop-shadow(0 0 20px var(--accent-primary));
-        animation: pulse-glow 3s ease-in-out infinite;
+        animation: pulse-neon 3s ease-in-out infinite;
       }
       
       &__title {
         font-family: var(--font-display);
-        font-size: 2.5rem;
-        background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
+        font-size: 3rem;
+        letter-spacing: 0.2rem;
+        color: var(--accent-primary);
+        text-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
         margin-bottom: var(--spacing-md);
       }
       
       &__text {
         color: var(--text-secondary);
-        font-size: 1.1rem;
+        font-family: var(--font-mono);
+        font-size: 0.9rem;
         max-width: 500px;
         margin-bottom: var(--spacing-xl);
       }
@@ -182,26 +179,24 @@ import { DatePipe } from '@angular/common';
       &__examples {
         display: flex;
         flex-wrap: wrap;
-        gap: var(--spacing-sm);
+        gap: var(--spacing-md);
         justify-content: center;
       }
     }
     
     .example-btn {
-      padding: var(--spacing-sm) var(--spacing-md);
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
-      color: var(--text-secondary);
-      font-family: var(--font-mono);
-      font-size: 0.875rem;
+      padding: var(--spacing-md);
+      color: var(--accent-primary);
+      font-family: var(--font-display);
+      font-size: 0.8rem;
       cursor: pointer;
-      transition: var(--transition-normal);
+      transition: all 0.2s;
+      border: 1px solid transparent;
       
       &:hover {
         border-color: var(--accent-primary);
-        color: var(--accent-primary);
-        box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+        box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+        transform: translateY(-2px);
       }
     }
     
@@ -212,41 +207,37 @@ import { DatePipe } from '@angular/common';
       padding: var(--spacing-md);
       border-radius: var(--radius-lg);
       margin-bottom: var(--spacing-sm);
-      backdrop-filter: var(--glass-blur);
-      animation: fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: fade-in-up 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       
       &--user {
-        background: rgba(26, 26, 26, 0.4);
-        border: 1px solid var(--glass-border);
+        border-right: 2px solid var(--accent-secondary);
+        background: linear-gradient(90deg, transparent, rgba(188, 19, 254, 0.1));
         align-self: flex-end;
         max-width: 85%;
+        text-align: right;
+        flex-direction: row-reverse;
       }
       
       &--assistant {
-        background: var(--glass-bg);
-        border: 1px solid rgba(0, 243, 255, 0.1);
-        box-shadow: var(--glass-shadow);
+        border-left: 2px solid var(--accent-primary);
+        background: linear-gradient(90deg, rgba(0, 243, 255, 0.05), transparent);
         max-width: 90%;
       }
       
-      &--thinking {
-        background: rgba(0, 243, 255, 0.05);
-        border: 1px dashed rgba(0, 243, 255, 0.3);
-      }
-      
       &__avatar {
-        width: 36px;
-        height: 36px;
+        width: 40px;
+        height: 40px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.25rem;
-        border-radius: var(--radius-sm);
-        background: var(--bg-secondary);
+        font-size: 1.5rem;
+        border-radius: 50%;
+        background: rgba(0,0,0,0.5);
+        border: 1px solid var(--border-color);
         flex-shrink: 0;
         
-        .thinking-icon {
-          animation: pulse-glow 1s ease-in-out infinite;
+        &.glow {
+            box-shadow: 0 0 10px var(--accent-primary);
         }
       }
       
@@ -260,201 +251,115 @@ import { DatePipe } from '@angular/common';
         align-items: center;
         gap: var(--spacing-sm);
         margin-bottom: var(--spacing-xs);
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        color: var(--text-muted);
       }
       
       &__role {
-        font-weight: 600;
-        font-size: 0.875rem;
+        font-weight: bold;
         color: var(--accent-primary);
       }
-      
-      &__time {
-        font-size: 0.75rem;
-        color: var(--text-muted);
+
+      .chat-message--user .chat-message__role {
+          color: var(--accent-secondary);
       }
       
       &__text {
         color: var(--text-primary);
         line-height: 1.6;
-        word-wrap: break-word;
         
         :global(a) {
           color: var(--accent-primary);
-          text-decoration: underline;
+          text-decoration: none;
+          border-bottom: 1px dotted var(--accent-primary);
         }
       }
       
       &__sources {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--spacing-sm);
         margin-top: var(--spacing-md);
-        padding-top: var(--spacing-sm);
-        border-top: 1px solid var(--border-color);
+        padding: var(--spacing-sm);
         
         .sources-label {
-          font-size: 0.75rem;
-          color: var(--text-muted);
+          display: block;
+          font-family: var(--font-mono);
+          font-size: 0.7rem;
+          color: var(--accent-primary);
+          margin-bottom: 4px;
         }
         
         .source-link {
           font-size: 0.75rem;
-          color: var(--accent-secondary);
-          text-decoration: none;
+          color: var(--text-secondary);
+          margin-right: 8px;
           
           &:hover {
             color: var(--accent-primary);
-            text-decoration: underline;
           }
         }
       }
     }
     
-    .thinking-status {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-md);
-      
-      .thinking-text {
-        color: var(--accent-primary);
-        font-size: 0.875rem;
-      }
-    }
-
-    .thinking-elapsed {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-md);
-      margin-top: var(--spacing-sm);
-      padding-top: var(--spacing-sm);
-      border-top: 1px solid rgba(0, 243, 255, 0.1);
-    }
-
-    .elapsed-badge {
-      font-size: 0.7rem;
-      font-family: var(--font-mono);
-      color: var(--text-muted);
-      background: var(--bg-tertiary);
-      padding: 2px 6px;
-      border-radius: var(--radius-sm);
-    }
-
-    .cancel-btn {
-      font-size: 0.75rem;
-      color: var(--accent-alert);
-      background: transparent;
-      border: 1px solid rgba(255, 0, 85, 0.3);
-      padding: 2px 8px;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: var(--transition-fast);
-
-      &:hover {
-        background: rgba(255, 0, 85, 0.1);
-        border-color: var(--accent-alert);
-        box-shadow: 0 0 10px rgba(255, 0, 85, 0.2);
-      }
-    }
-    
     /* Input Area */
     .chat-input-container {
-      padding: var(--spacing-md) var(--spacing-lg);
-      background: var(--bg-secondary);
-      border-top: 1px solid var(--border-color);
+      padding: var(--spacing-sm) var(--spacing-lg);
+      display: flex;
+      align-items: center;
+      margin-top: var(--spacing-md);
     }
     
     .chat-input-form {
       display: flex;
       gap: var(--spacing-sm);
+      width: 100%;
+      align-items: center;
+    }
+
+    .input-prefix {
+        color: var(--accent-primary);
+        font-family: var(--font-mono);
+        font-weight: bold;
     }
     
     .chat-input {
       flex: 1;
       padding: var(--spacing-md);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
-      background: var(--bg-primary);
+      background: transparent;
+      border: none;
       color: var(--text-primary);
       font-family: var(--font-mono);
-      font-size: 0.875rem;
-      transition: var(--transition-fast);
+      font-size: 1rem;
+      caret-color: var(--accent-primary);
       
       &:focus {
         outline: none;
-        border-color: var(--accent-primary);
-        box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
-      }
-      
-      &::placeholder {
-        color: var(--text-muted);
-      }
-      
-      &:disabled {
-        opacity: 0.5;
       }
     }
     
     .chat-submit-btn {
-      width: 48px;
-      height: 48px;
+      padding: 0 var(--spacing-md);
+      height: 40px;
       display: flex;
       align-items: center;
       justify-content: center;
       border: 1px solid var(--accent-primary);
-      border-radius: var(--radius-md);
-      background: transparent;
+      background: rgba(0, 243, 255, 0.1);
       color: var(--accent-primary);
-      font-size: 1.25rem;
+      font-family: var(--font-display);
+      font-size: 0.8rem;
       cursor: pointer;
-      transition: var(--transition-normal);
+      transition: all 0.2s;
       
       &:hover:not(:disabled) {
         background: var(--accent-primary);
-        color: var(--bg-primary);
-        box-shadow: var(--glow-primary);
+        color: black;
+        box-shadow: 0 0 10px var(--accent-primary);
       }
       
       &:disabled {
         opacity: 0.3;
         cursor: not-allowed;
-      }
-    }
-    
-    .chat-input-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: var(--spacing-sm);
-      
-      .footer-text {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-      }
-      
-      .clear-btn {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        background: transparent;
-        border: none;
-        color: var(--text-muted);
-        font-family: var(--font-mono);
-        font-size: 0.75rem;
-        cursor: pointer;
-        transition: var(--transition-fast);
-        
-        &:hover {
-          color: var(--accent-alert);
-        }
-      }
-    }
-    
-    @keyframes fade-in {
-      from { 
-        opacity: 0; 
-        transform: translateY(10px); 
-      }
-      to { 
-        opacity: 1; 
-        transform: translateY(0); 
+        border-color: var(--text-muted);
       }
     }
   `]
@@ -467,6 +372,13 @@ export class ChatStreamComponent implements AfterViewChecked {
   inputMessage = '';
   private shouldScroll = false;
 
+  // Mock logs for demonstration - in real app would come from service
+  mockLogs: string[] = [
+    "Initializing connection to Nexus Core...",
+    "Secure channel established.",
+    "Waiting for user input..."
+  ];
+
   ngAfterViewChecked(): void {
     if (this.shouldScroll) {
       this.scrollToBottom();
@@ -478,6 +390,8 @@ export class ChatStreamComponent implements AfterViewChecked {
     event.preventDefault();
     if (this.inputMessage.trim()) {
       this.nexusService.sendMessage(this.inputMessage);
+      this.mockLogs.push(`PROCESSING INPUT: "${this.inputMessage}"`);
+      this.mockLogs.push("ROUTING TO ORCHESTRATOR...");
       this.inputMessage = '';
       this.shouldScroll = true;
     }
@@ -485,17 +399,11 @@ export class ChatStreamComponent implements AfterViewChecked {
 
   sendExample(message: string): void {
     this.nexusService.sendMessage(message);
+    this.mockLogs.push(`EXECUTING MACRO: "${message}"`);
     this.shouldScroll = true;
   }
 
-  formatElapsedTime(seconds: number): string {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-  }
-
   formatMessage(content: string): string {
-    // Convert markdown links to HTML
     return content.replace(
       /\[([^\]]+)\]\(([^)]+)\)/g,
       '<a href="$2" target="_blank">$1</a>'

@@ -46,35 +46,62 @@ class NewsScoutAgent:
             host=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         )
     
-    async def search(self, game: str, query: str, version: str | None = None) -> NewsResult:
-        """Search for gaming news and format results"""
+    async def search(self, game: str, query: str, version: str | None = None, language: str = "es") -> NewsResult:
+        """Search for gaming news and format results with CLR (Cross-Language Retrieval)"""
         import asyncio
         
-        # Build optimized search query - concise for the new engine
-        search_query = f"{game} {query}"
+        # Build base query
+        base_query = f"{game} {query}"
         if version:
-            search_query += f" {version}"
+            base_query += f" {version}"
         
-        # Execute web search with timeout
+        search_tasks = []
+        
+        # 1. Primary Strategy: Parallel Search
+        # If language is Spanish, search both Local (ES) and Global (EN) sources
+        if language == "es":
+            # Task 1: Local News
+            search_tasks.append(live_web_search(base_query, search_type="ES_NEWS"))
+            # Task 2: Global/Source News (Force English context for better recall)
+            global_query = f"{game} news update" # Simplified for global search
+            search_tasks.append(live_web_search(global_query, search_type="GLOBAL_NEWS"))
+        else:
+            # Default/English: Just global search
+            search_tasks.append(live_web_search(base_query, search_type="GLOBAL_NEWS"))
+        
+        # Execute searches
         try:
-            search_results = await asyncio.wait_for(
-                live_web_search(search_query, search_type="news"),
-                timeout=20.0
+            results_list = await asyncio.wait_for(
+                asyncio.gather(*search_tasks),
+                timeout=25.0
             )
-        except asyncio.TimeoutError:
-            print("NewsScout: Search timeout")
-            search_results = []
-        
-        if not search_results:
+            # Flatten results
+            search_results = [item for sublist in results_list for item in sublist]
+            
+            # Remove duplicates by URL
+            seen_urls = set()
+            unique_results = []
+            for r in search_results:
+                if r["url"] not in seen_urls:
+                    unique_results.append(r)
+                    seen_urls.add(r["url"])
+            search_results = unique_results
+            
+            if not search_results:
+                raise ValueError("No results found")
+                
+        except (asyncio.TimeoutError, ValueError):
+            print("NewsScout: Search timeout or empty")
             return NewsResult(
                 summary=f"No encontré noticias recientes sobre {game}. Intenta ser más específico.",
                 artifact={"type": "empty", "message": "Sin resultados"},
                 sources=[]
             )
         
-        # Scrape top results for content in parallel with timeout
+        # Scrape top results (mix of ES and EN)
         scrape_tasks = []
-        for result in search_results[:3]:
+        # Prioritize keeping a mix: 2 ES + 2 EN if available
+        for result in search_results[:5]:
             scrape_tasks.append(scrape_gaming_content(result["url"]))
         
         contents = []
@@ -82,7 +109,7 @@ class NewsScoutAgent:
             try:
                 scraped_texts = await asyncio.wait_for(
                     asyncio.gather(*scrape_tasks, return_exceptions=True),
-                    timeout=15.0
+                    timeout=20.0
                 )
                 
                 for i, content in enumerate(scraped_texts):
@@ -90,26 +117,35 @@ class NewsScoutAgent:
                         contents.append({
                             "title": search_results[i]["title"],
                             "url": search_results[i]["url"],
-                            "content": content[:2000]
+                            "domain": search_results[i]["url"].split("/")[2],
+                            "content": content[:2500] 
                         })
             except asyncio.TimeoutError:
                 print("NewsScout: Scrape timeout")
         
-        # Use LLM to synthesize - explicitly mention bilingual content
-        synthesis_prompt = f"""Analiza estas noticias recopiladas sobre {game}. 
-IMPORTANTE: Los resultados pueden incluir contenido en inglés que ha sido traducido o extraído. Combina lo mejor de ambas fuentes.
-
-1. Un resumen ejecutivo de 2-3 líneas con impacto en el jugador.
-2. Lista de noticias principales.
-
-Contenido encontrado:
+        # Use LLM to synthesize with CLR awareness
+        synthesis_prompt = f"""Analiza estas noticias sobre {game}. DETECTA EL IDIOMA DEL USUARIO: {language}.
+        
+FUENTES ENCONTRADAS:
 {contents}
+
+TU TAREA:
+1. Sintetiza las noticias más importantes.
+2. Si la fuente es en INGLÉS (ej: IGN, Bloomberg), TRADUCE el resumen al {language} pero mantén términos técnicos (nerf, buff, tier).
+3. Si hay rumores/leaks, indícalo claramente.
 
 Responde en JSON:
 {{
-    "summary": "resumen breve",
+    "summary": "Resumen ejecutivo en {language}...",
     "news_items": [
-        {{"title": "...", "date": "...", "description": "...", "url": "...", "importance": "high|medium|low"}}
+        {{
+            "title": "Título traducido o original",
+            "date": "Fecha approx",
+            "description": "Resumen en {language}...",
+            "url": "url_original",
+            "source_lang": "en|es",
+            "importance": "high|medium|low"
+        }}
     ]
 }}"""
         

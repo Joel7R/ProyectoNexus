@@ -2,10 +2,10 @@ import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 @Component({
-    selector: 'app-navbar',
-    standalone: true,
-    imports: [RouterLink, RouterLinkActive],
-    template: `
+  selector: 'app-navbar',
+  standalone: true,
+  imports: [RouterLink, RouterLinkActive],
+  template: `
     <nav class="navbar glass-panel">
       <div class="logo">
         <span class="text-primary">NEXUS</span> COMMAND
@@ -17,13 +17,16 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         <a routerLink="/calendar" routerLinkActive="active" class="nav-item">
           <i class="icon">📅</i> CALENDAR
         </a>
+        <a routerLink="/time2play" routerLinkActive="active" class="nav-item">
+          <i class="icon">⏱️</i> TIME2PLAY
+        </a>
         <a routerLink="/chat" routerLinkActive="active" class="nav-item">
           <i class="icon">💬</i> CHAT
         </a>
       </div>
     </nav>
   `,
-    styles: [`
+  styles: [`
     .navbar {
       display: flex;
       justify-content: space-between;

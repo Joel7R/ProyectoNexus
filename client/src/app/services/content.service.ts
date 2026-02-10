@@ -8,6 +8,7 @@ export interface NewsItem {
     date: string;
     summary: string;
     url: string;
+    source_lang?: string;
     image?: string;
 }
 

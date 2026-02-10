@@ -17,6 +17,9 @@ from dotenv import load_dotenv
 from agents.graph import GamingNexusGraph
 from agents.state import ConversationState
 from agents.news_scout import NewsScoutAgent
+from agents.time_estimator import TimeEstimatorAgent
+from agents.deal_scout import DealScoutAgent
+from agents.chronos import ChronosAgent
 
 load_dotenv()
 
@@ -173,30 +176,152 @@ async def get_gaming_news(request: NewsRequest):
     # Transform result for frontend
     news_items = []
     
-    # Try to extract items from artifact if structured
-    if result.artifact and result.artifact.get("type") == "table":
-        # The agent returns a table artifact, we'll try to use the source items directly if available in the result object
-        # Note: NewsResult object has 'sources' which are just valid links, 
-        # but the agent internal logic might have more details. 
-        # For now, let's trust the 'sources' or parse the artifact content if possible.
-        pass
-
-    # Re-map sources to news items format
-    # Ideally, we should modify NewsScout to return structured items more clearly, 
-    # but for now we adapt the output.
-    for i, source in enumerate(result.sources):
-        news_items.append({
-            "title": source.get("title", "News Item"),
-            "date": "Today", # Logic to extract date could be improved
-            "summary": result.summary[:100] + "...", # Fallback summary
-            "url": source.get("url", "#"),
-            "image": None # Placeholder for future image scraping
-        })
+    # Try to extract items from artifact if structured (Preferred method)
+    if result.artifact and isinstance(result.artifact, dict) and result.artifact.get("rows"):
+        for item in result.artifact["rows"]:
+            news_items.append({
+                "title": item.get("title", "News Item"),
+                "date": item.get("date", "Recently"),
+                "summary": item.get("description", result.summary[:100] + "..."),
+                "url": item.get("url", "#"),
+                "source_lang": item.get("source_lang", "en"), # Default to 'en' if missing
+                "image": None 
+            })
+    else:
+        # Fallback to sources list
+        for i, source in enumerate(result.sources):
+            news_items.append({
+                "title": source.get("title", "News Item"),
+                "date": "Today", 
+                "summary": result.summary[:100] + "...", 
+                "url": source.get("url", "#"),
+                "source_lang": "en",
+                "image": None 
+            })
         
     return {
         "summary": result.summary,
         "items": news_items if news_items else []
     }
+
+# ============= TIME2PLAY ENDPOINTS =============
+
+class HLTBRequest(BaseModel):
+    """Request for single game time estimation"""
+    game_name: str
+
+class BacklogRequest(BaseModel):
+    """Request for backlog calculation"""
+    games: list[str]
+
+class MarathonRequest(BaseModel):
+    """Request for marathon mode calculation"""
+    game_name: str
+    hours_per_day: float
+
+# ============= PRICE HUNTER MODELS =============
+
+class DealSearchRequest(BaseModel):
+    """Request for price search"""
+    game_name: str
+
+class DealCompareRequest(BaseModel):
+    """Request for price comparison"""
+    game_name: str
+    store_ids: list[str]
+
+# ============= LORE MASTER MODELS =============
+
+class LoreRequest(BaseModel):
+    """Request for game lore"""
+    game_name: str
+    spoiler_level: str = "light"  # none, light, full
+
+class CharacterMapRequest(BaseModel):
+    """Request for character relationships"""
+    game_name: str
+
+@app.post("/api/hltb/game")
+async def get_game_time(request: HLTBRequest):
+    """Get completion time estimates for a single game"""
+    print(f"HLTB request for: {request.game_name}")
+    
+    agent = TimeEstimatorAgent()
+    result = await agent.estimate_game_time(request.game_name)
+    
+    return result
+
+@app.post("/api/hltb/backlog")
+async def calculate_backlog(request: BacklogRequest):
+    """Calculate total time for multiple games"""
+    print(f"Backlog calculation for {len(request.games)} games")
+    
+    agent = TimeEstimatorAgent()
+    result = await agent.calculate_backlog(request.games)
+    
+    return result
+
+@app.post("/api/hltb/marathon")
+async def marathon_mode(request: MarathonRequest):
+    """Calculate days to complete based on hours per day"""
+    print(f"Marathon mode for {request.game_name} @ {request.hours_per_day}h/day")
+    
+    agent = TimeEstimatorAgent()
+    result = await agent.marathon_mode(request.game_name, request.hours_per_day)
+    
+    return result
+
+# ============= END TIME2PLAY ENDPOINTS =============
+
+# ============= PRICE HUNTER ENDPOINTS =============
+
+@app.post("/api/deals/search")
+async def search_deals(request: DealSearchRequest):
+    """Search for game prices across all stores"""
+    print(f"Price search for: {request.game_name}")
+    
+    agent = DealScoutAgent()
+    result = await agent.search_deals(request.game_name)
+    
+    return result
+
+@app.post("/api/deals/compare")
+async def compare_deals(request: DealCompareRequest):
+    """Compare prices for specific stores"""
+    print(f"Price comparison for: {request.game_name} across {len(request.store_ids)} stores")
+    
+    agent = DealScoutAgent()
+    result = await agent.compare_stores(request.game_name, request.store_ids)
+    
+    return result
+
+# ============= END PRICE HUNTER ENDPOINTS =============
+
+# ============= LORE MASTER ENDPOINTS =============
+
+@app.post("/api/lore/story")
+async def get_game_lore(request: LoreRequest):
+    """Get game story with spoiler control"""
+    print(f"Lore request for: {request.game_name} (spoiler level: {request.spoiler_level})")
+    
+    agent = ChronosAgent()
+    result = await agent.get_story(request.game_name, request.spoiler_level)
+    
+    return result
+
+@app.post("/api/lore/characters")
+async def get_character_map(request: CharacterMapRequest):
+    """Get character relationships"""
+    print(f"Character map for: {request.game_name}")
+    
+    agent = ChronosAgent()
+    result = await agent.get_character_map(request.game_name)
+    
+    return result
+
+# ============= END LORE MASTER ENDPOINTS =============
+
+
 
 @app.get("/api/calendar")
 async def get_upcoming_games():
@@ -219,6 +344,7 @@ async def get_upcoming_games():
         "summary": result.summary,
         "raw_data": result.sources
     }
+if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "main:app",

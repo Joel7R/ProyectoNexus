@@ -7,27 +7,38 @@ from duckduckgo_search import DDGS
 
 
 # Domain filters by search type - Expanded for better coverage
+# Domain filters by search type - Multilingual & Technical
 DOMAIN_FILTERS = {
-    "news": [
-        "ign.com", "gamespot.com", "kotaku.com", "polygon.com", "pcgamer.com", 
-        "eurogamer.net", "rockpapershotgun.com", "gematsu.com", "videogameschronicle.com",
-        "3djuegos.com", "meristation.as.com", "vandal.elespanol.com", "hobbyconsolas.com",
-        "vidaextra.com", "elotrolado.net", "gamesradar.com", "gameinformer.com", 
-        "theverge.com", "dualshockers.com", "videogamer.com"
+    # Noticias en Español (Contexto Local)
+    "ES_NEWS": [
+        "3djuegos.com", "vandal.elespanol.com", "hobbyconsolas.com", 
+        "meristation.as.com", "vidaextra.com", "elotrolado.net", 
+        "ign.com/es", "eurogamer.es"
     ],
-    "wiki": [
-        "fextralife.com", "wiki.gg", "fandom.com", "eliteguias.com",
-        "leagueoflegends.fandom.com", "genshin-impact.fandom.com", "eldenring.wiki.fextralife.com",
-        "icy-veins.com", "mobafire.com", "u.gg", "op.gg", "wowhead.com", "game8.co",
-        "maxroll.gg", "genshin.gg", "hoyolab.com", "metasrc.com", "tracker.gg", "vlr.gg",
-        "primagames.com", "gamepressure.com", "powerpyx.com", "mapgenie.io", "gamerant.com",
-        "thegamer.com", "gameskinny.com", "polygon.com/guides", "rockpapershotgun.com/guides"
+    # Noticias Globales (Fuentes Primarias & Leaks)
+    "GLOBAL_NEWS": [
+        "bloomberg.com", "ign.com", "eurogamer.net", "videogameschronicle.com", 
+        "insider-gaming.com", "digitalfoundry.net", "gamespot.com", "kotaku.com",
+        "pcgamer.com", "rockpapershotgun.com", "gematsu.com", "windowscentral.com"
     ],
-    "forum": [
-        "reddit.com/r/", "reddit.com", "gamefaqs.gamespot.com", "forums.unrealengine.com",
-        "resetera.com", "neogaf.com", "steamcommunity.com/app", "boards.greenheartgames.com"
+    # Wikis Técnicas & Builds (La "Verdad" del Meta)
+    "WIKIS_TECH": [
+        "fextralife.com", "wiki.gg", "wowhead.com", "mobafire.com", "u.gg", 
+        "d4builds.gg", "maxroll.gg", "poe2db.tw", "lostark.nexus", "tftactics.gg",
+        "dustloop.com", "serebii.net", "hltv.org", "liquipedia.net"
+    ],
+    # Foros (Data Mining & Bugs)
+    "FORUMS": [
+        "reddit.com", "steamcommunity.com", "resetera.com", "gamefaqs.gamespot.com",
+        "forums.unrealengine.com", "stackoverflow.com"
     ]
 }
+
+DOMAIN_BLACKLIST = [
+    "pinterest.com", "softonic.com", "quora.com", "expertsexchange.com",
+    "userbenchmark.com", "fandom.com/explore" 
+]
+
 
 # Bilingual mapping for query expansion
 TRANSLATIONS = {
@@ -45,11 +56,12 @@ TRANSLATIONS = {
 
 async def live_web_search(
     query: str,
-    search_type: Literal["news", "wiki", "forum"] = "wiki",
+    search_type: str = "wiki",
     max_results: int = 15
 ) -> list[dict]:
     """
-    Search the web for gaming information using DuckDuckGo with bilingual optimization.
+    Search web using DuckDuckGo with optimized domain filtering.
+    search_type can be: 'news', 'wiki', 'forum' OR specific 'ES_NEWS', 'GLOBAL_NEWS', etc.
     """
     import asyncio
     
@@ -57,30 +69,32 @@ async def live_web_search(
         ddgs = DDGS()
         
         # 1. Gaming Context Reinforcement
-        # Always ensure 'gaming' or 'video game' is in the subconscious of the search
         gaming_query = f"{query} gaming video game"
         
-        # 2. Bilingual Query Expansion (Smart Spanish -> English bridge)
-        # Many gaming insights are only in English
+        # 2. Bilingual Query Expansion
         query_words = query.lower().split()
         english_terms = []
         for word in query_words:
             if word in TRANSLATIONS:
                 english_terms.extend(TRANSLATIONS[word])
         
-        if english_terms:
-            # Create a combined query that covers both languages
-            search_keywords = f"{gaming_query} {' '.join(english_terms)}"
-        else:
-            # Ensure we use the gaming_query anyway
-            search_keywords = gaming_query
+        search_keywords = f"{gaming_query} {' '.join(english_terms)}" if english_terms else gaming_query
             
-        # 3. Domain Hints (Not strictly limited, but suggested)
-        domains = DOMAIN_FILTERS.get(search_type, [])
+        # 3. Domain Hints Mapping
+        domains = []
+        if search_type in DOMAIN_FILTERS:
+            domains = DOMAIN_FILTERS[search_type]
+        elif search_type == "news":
+            domains = DOMAIN_FILTERS["ES_NEWS"] + DOMAIN_FILTERS["GLOBAL_NEWS"]
+        elif search_type == "wiki":
+            domains = DOMAIN_FILTERS["WIKIS_TECH"]
+        elif search_type == "forum":
+            domains = DOMAIN_FILTERS["FORUMS"]
+            
         site_hints = ""
         if domains:
-            # We use site: hints for the top 5 relevant sites to boost them
-            site_hints = " OR ".join([f"site:{d}" for d in domains[:5]])
+            # Boost top 5 relevant sites
+            site_hints = " OR ".join([f"site:{d}" for d in domains[:8]])
         
         final_query = f"{search_keywords} ({site_hints})" if site_hints else search_keywords
         
@@ -88,7 +102,7 @@ async def live_web_search(
         def do_search():
             # Increase results to ensure enough quality after filtering
             fetch_count = max_results * 3 
-            if search_type == "news":
+            if "news" in search_type.lower():
                 return list(ddgs.news(
                     keywords=search_keywords,
                     max_results=fetch_count,
@@ -113,6 +127,10 @@ async def live_web_search(
             url = r.get("href") or r.get("url", "")
             title = r.get("title", "").lower()
             snippet = (r.get("body") or r.get("description", "")).lower()
+            
+            # Blacklist check
+            if any(black in url.lower() for black in DOMAIN_BLACKLIST):
+                continue
             
             # Score result based on domain authority and relevance
             score = 0
