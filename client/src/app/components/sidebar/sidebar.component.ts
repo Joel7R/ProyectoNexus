@@ -7,10 +7,10 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 
 @Component({
-    selector: 'app-sidebar',
-    standalone: true,
-    imports: [CommonModule, RouterLink, RouterLinkActive],
-    template: `
+  selector: 'app-sidebar',
+  standalone: true,
+  imports: [CommonModule, RouterLink, RouterLinkActive],
+  template: `
     <nav class="sidebar">
       <div class="logo">
         <span class="logo-text">
@@ -44,6 +44,18 @@ import { CommonModule } from '@angular/common';
           <div class="nav-indicator"></div>
         </a>
 
+        <a routerLink="/event-hub" routerLinkActive="active" class="nav-item">
+          <i class="icon">🎉</i>
+          <span class="nav-text">Event Hub</span>
+          <div class="nav-indicator"></div>
+        </a>
+
+        <a routerLink="/patch-analyst" routerLinkActive="active" class="nav-item">
+          <i class="icon">📊</i>
+          <span class="nav-text">Patch Analyst</span>
+          <div class="nav-indicator"></div>
+        </a>
+
         <a routerLink="/chat" routerLinkActive="active" class="nav-item">
           <i class="icon">💬</i>
           <span class="nav-text">AI Chat Hub</span>
@@ -59,7 +71,7 @@ import { CommonModule } from '@angular/common';
       </div>
     </nav>
   `,
-    styles: [`
+  styles: [`
     .sidebar {
       width: 260px;
       height: 100vh;

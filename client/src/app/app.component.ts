@@ -6,15 +6,19 @@ import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
+import { HypeBarComponent } from './components/hype-bar/hype-bar.component';
 import { NexusSidebarComponent } from './components/nexus-sidebar/nexus-sidebar.component';
 import { NexusService } from './services/nexus.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, NavbarComponent, SidebarComponent, NexusSidebarComponent],
+  imports: [RouterOutlet, NavbarComponent, SidebarComponent, HypeBarComponent, NexusSidebarComponent],
   template: `
     <div class="nexus-container">
+      <!-- Ambient Hype Bar (Notifications) -->
+      <app-hype-bar></app-hype-bar>
+
       <!-- Star Background & Scanlines -->
       <div class="cyber-grid"></div>
       <div class="scanline-overlay"></div>

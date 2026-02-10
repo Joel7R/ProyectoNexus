@@ -20,6 +20,8 @@ from agents.news_scout import NewsScoutAgent
 from agents.time_estimator import TimeEstimatorAgent
 from agents.deal_scout import DealScoutAgent
 from agents.chronos import ChronosAgent
+from agents.event_scout import EventScoutAgent
+from agents.meta_analyst import MetaAnalystAgent
 
 load_dotenv()
 
@@ -241,6 +243,24 @@ class CharacterMapRequest(BaseModel):
     """Request for character relationships"""
     game_name: str
 
+# ============= EVENT TRACKER MODELS =============
+
+class EventsRequest(BaseModel):
+    """Request for upcoming events"""
+    hours: int = 48  # Time window
+
+class RumorsRequest(BaseModel):
+    """Request for event rumors"""
+    event_id: str
+
+# ============= PATCH ANALYST MODELS =============
+
+class PatchAnalysisRequest(BaseModel):
+    """Request for patch analysis"""
+    game: str
+    patch_version: str = None
+    main_character: str = None
+
 @app.post("/api/hltb/game")
 async def get_game_time(request: HLTBRequest):
     """Get completion time estimates for a single game"""
@@ -320,6 +340,59 @@ async def get_character_map(request: CharacterMapRequest):
     return result
 
 # ============= END LORE MASTER ENDPOINTS =============
+
+# ============= EVENT TRACKER ENDPOINTS =============
+
+@app.get("/api/events/upcoming")
+async def get_upcoming_events(hours: int = 48):
+    """Get upcoming gaming events"""
+    print(f"Fetching events for next {hours} hours")
+    
+    agent = EventScoutAgent()
+    result = await agent.get_upcoming_events(hours)
+    
+    return result
+
+@app.get("/api/events/live")
+async def get_live_events():
+    """Get currently live events"""
+    print("Checking for live events")
+    
+    agent = EventScoutAgent()
+    result = await agent.get_live_events()
+    
+    return result
+
+@app.post("/api/events/rumors")
+async def get_event_rumors(request: RumorsRequest):
+    """Get rumors for a specific event"""
+    print(f"Fetching rumors for: {request.event_id}")
+    
+    agent = EventScoutAgent()
+    result = await agent.get_rumors(request.event_id)
+    
+    return result
+
+# ============= END EVENT TRACKER ENDPOINTS =============
+
+# ============= PATCH ANALYST ENDPOINTS =============
+
+@app.post("/api/patch/analyze")
+async def analyze_patch(request: PatchAnalysisRequest):
+    """Analyze patch notes for a game"""
+    print(f"Analyzing patch for: {request.game}")
+    
+    agent = MetaAnalystAgent()
+    result = await agent.analyze_patch(
+        request.game,
+        request.patch_version,
+        request.main_character
+    )
+    
+    return result
+
+# ============= END PATCH ANALYST ENDPOINTS =============
+
 
 
 

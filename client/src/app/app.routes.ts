@@ -9,6 +9,8 @@ export const routes: Routes = [
     { path: 'time2play', loadComponent: () => import('./components/time2play/time2play.component').then(m => m.Time2PlayComponent) },
     { path: 'price-hunter', loadComponent: () => import('./components/price-hunter/price-hunter.component').then(m => m.PriceHunterComponent) },
     { path: 'lore-master', loadComponent: () => import('./components/lore-master/lore-master.component').then(m => m.LoreMasterComponent) },
+    { path: 'event-hub', loadComponent: () => import('./components/event-hub/event-hub.component').then(m => m.EventHubComponent) },
+    { path: 'patch-analyst', loadComponent: () => import('./components/patch-analyst/patch-analyst.component').then(m => m.PatchAnalystComponent) },
     { path: 'chat', component: ChatStreamComponent },
     { path: '', redirectTo: 'news', pathMatch: 'full' },
     { path: '**', redirectTo: 'news' } // Wildcard route
