@@ -8,10 +8,10 @@ import { FormsModule } from '@angular/forms';
 import { PriceHunterService, type DealData } from '../../services/price-hunter.service';
 
 @Component({
-    selector: 'app-price-hunter',
-    standalone: true,
-    imports: [CommonModule, FormsModule],
-    template: `
+  selector: 'app-price-hunter',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
     <div class="price-hunter-container">
       <!-- Search Section -->
       <div class="search-section">
@@ -70,7 +70,7 @@ import { PriceHunterService, type DealData } from '../../services/price-hunter.s
                 
                 @if (service.currentDeals()!.savings > 0) {
                   <div class="savings-badge">
-                    <span class="savings-amount">Save ${{ service.currentDeals()!.savings }}</span>
+                    <span class="savings-amount">Save \${{ service.currentDeals()!.savings }}</span>
                     <span class="savings-percent">({{ service.currentDeals()!.savings_percent }}%)</span>
                   </div>
                 }
@@ -125,7 +125,7 @@ import { PriceHunterService, type DealData } from '../../services/price-hunter.s
       }
     </div>
   `,
-    styles: [`
+  styles: [`
     .price-hunter-container {
       max-width: 1200px;
       margin: 0 auto;
@@ -467,22 +467,22 @@ import { PriceHunterService, type DealData } from '../../services/price-hunter.s
   `]
 })
 export class PriceHunterComponent {
-    service = inject(PriceHunterService);
-    searchQuery = '';
+  service = inject(PriceHunterService);
+  searchQuery = '';
 
-    async onSearch(event: Event) {
-        event.preventDefault();
-        if (!this.searchQuery.trim()) return;
+  async onSearch(event: Event) {
+    event.preventDefault();
+    if (!this.searchQuery.trim()) return;
 
-        try {
-            await this.service.searchDeals(this.searchQuery);
-        } catch (error) {
-            console.error('Search error:', error);
-        }
+    try {
+      await this.service.searchDeals(this.searchQuery);
+    } catch (error) {
+      console.error('Search error:', error);
     }
+  }
 
-    getOtherDeals(): DealData[] {
-        const deals = this.service.currentDeals()?.deals || [];
-        return deals.filter(deal => !deal.is_best);
-    }
+  getOtherDeals(): DealData[] {
+    const deals = this.service.currentDeals()?.deals || [];
+    return deals.filter(deal => !deal.is_best);
+  }
 }

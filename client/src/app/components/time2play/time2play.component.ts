@@ -8,10 +8,10 @@ import { FormsModule } from '@angular/forms';
 import { Time2PlayService, type GameTimeData } from '../../services/time2play.service';
 
 @Component({
-    selector: 'app-time2play',
-    standalone: true,
-    imports: [CommonModule, FormsModule],
-    template: `
+  selector: 'app-time2play',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
     <div class="time2play-container">
       <!-- Search Interface -->
       <div class="search-section">
@@ -206,13 +206,13 @@ import { Time2PlayService, type GameTimeData } from '../../services/time2play.se
                 </div>
                 @if (service.backlogData()!.time_estimates.casual_2h_per_day) {
                   <div class="total-item">
-                    <span class="total-label">@ 2h/day:</span>
+                    <span class="total-label">&#64; 2h/day:</span>
                     <span class="total-value">{{ service.backlogData()!.time_estimates.casual_2h_per_day }} days</span>
                   </div>
                 }
                 @if (service.backlogData()!.time_estimates.moderate_4h_per_day) {
                   <div class="total-item">
-                    <span class="total-label">@ 4h/day:</span>
+                    <span class="total-label">&#64; 4h/day:</span>
                     <span class="total-value">{{ service.backlogData()!.time_estimates.moderate_4h_per_day }} days</span>
                   </div>
                 }
@@ -223,7 +223,7 @@ import { Time2PlayService, type GameTimeData } from '../../services/time2play.se
       </div>
     </div>
   `,
-    styles: [`
+  styles: [`
     .time2play-container {
       max-width: 1000px;
       margin: 0 auto;
@@ -705,86 +705,86 @@ import { Time2PlayService, type GameTimeData } from '../../services/time2play.se
   `]
 })
 export class Time2PlayComponent {
-    service = inject(Time2PlayService);
+  service = inject(Time2PlayService);
 
-    searchQuery = '';
-    backlogInput = '';
-    backlogGames = signal<string[]>([]);
-    showMarathonMode = signal(false);
-    hoursPerDay = 2.5;
+  searchQuery = '';
+  backlogInput = '';
+  backlogGames = signal<string[]>([]);
+  showMarathonMode = signal(false);
+  hoursPerDay = 2.5;
 
-    async onSearch(event: Event) {
-        event.preventDefault();
-        if (!this.searchQuery.trim()) return;
+  async onSearch(event: Event) {
+    event.preventDefault();
+    if (!this.searchQuery.trim()) return;
 
-        try {
-            await this.service.searchGame(this.searchQuery);
-            this.showMarathonMode.set(false); // Reset marathon mode on new search
-        } catch (error) {
-            console.error('Search error:', error);
-        }
+    try {
+      await this.service.searchGame(this.searchQuery);
+      this.showMarathonMode.set(false); // Reset marathon mode on new search
+    } catch (error) {
+      console.error('Search error:', error);
     }
+  }
 
-    toggleMarathonMode() {
-        this.showMarathonMode.update(v => !v);
-        if (this.showMarathonMode() && this.service.currentGame()) {
-            this.calculateMarathon();
-        }
+  toggleMarathonMode() {
+    this.showMarathonMode.update(v => !v);
+    if (this.showMarathonMode() && this.service.currentGame()) {
+      this.calculateMarathon();
     }
+  }
 
-    async calculateMarathon() {
-        if (!this.service.currentGame()) return;
+  async calculateMarathon() {
+    if (!this.service.currentGame()) return;
 
-        try {
-            await this.service.calculateMarathon(
-                this.service.currentGame()!.game,
-                this.hoursPerDay
-            );
-        } catch (error) {
-            console.error('Marathon calculation error:', error);
-        }
+    try {
+      await this.service.calculateMarathon(
+        this.service.currentGame()!.game,
+        this.hoursPerDay
+      );
+    } catch (error) {
+      console.error('Marathon calculation error:', error);
     }
+  }
 
-    addToBacklog() {
-        if (!this.backlogInput.trim()) return;
+  addToBacklog() {
+    if (!this.backlogInput.trim()) return;
 
-        this.backlogGames.update(games => [...games, this.backlogInput.trim()]);
-        this.backlogInput = '';
+    this.backlogGames.update(games => [...games, this.backlogInput.trim()]);
+    this.backlogInput = '';
+  }
+
+  removeFromBacklog(index: number) {
+    this.backlogGames.update(games => games.filter((_, i) => i !== index));
+  }
+
+  async calculateBacklog() {
+    if (this.backlogGames().length === 0) return;
+
+    try {
+      await this.service.calculateBacklog(this.backlogGames());
+    } catch (error) {
+      console.error('Backlog calculation error:', error);
     }
+  }
 
-    removeFromBacklog(index: number) {
-        this.backlogGames.update(games => games.filter((_, i) => i !== index));
+  getBarWidth(hours: number, type: 'main' | 'extras'): number {
+    const maxHours = this.service.currentGame()?.times?.completionist || 100;
+    return Math.min((hours / maxHours) * 100, 100);
+  }
+
+  getCompletionistGradient(hours: number): string {
+    if (hours < 20) {
+      return 'linear-gradient(90deg, #ffcc00, rgba(255, 204, 0, 0.5))';
+    } else if (hours < 50) {
+      return 'linear-gradient(90deg, #ff9900, rgba(255, 153, 0, 0.5))';
+    } else if (hours < 100) {
+      return 'linear-gradient(90deg, #ff6600, rgba(255, 102, 0, 0.5))';
+    } else {
+      return 'linear-gradient(90deg, #ff0055, rgba(255, 0, 85, 0.5))';
     }
+  }
 
-    async calculateBacklog() {
-        if (this.backlogGames().length === 0) return;
-
-        try {
-            await this.service.calculateBacklog(this.backlogGames());
-        } catch (error) {
-            console.error('Backlog calculation error:', error);
-        }
-    }
-
-    getBarWidth(hours: number, type: 'main' | 'extras'): number {
-        const maxHours = this.service.currentGame()?.times?.completionist || 100;
-        return Math.min((hours / maxHours) * 100, 100);
-    }
-
-    getCompletionistGradient(hours: number): string {
-        if (hours < 20) {
-            return 'linear-gradient(90deg, #ffcc00, rgba(255, 204, 0, 0.5))';
-        } else if (hours < 50) {
-            return 'linear-gradient(90deg, #ff9900, rgba(255, 153, 0, 0.5))';
-        } else if (hours < 100) {
-            return 'linear-gradient(90deg, #ff6600, rgba(255, 102, 0, 0.5))';
-        } else {
-            return 'linear-gradient(90deg, #ff0055, rgba(255, 0, 85, 0.5))';
-        }
-    }
-
-    getWorthClass(verdict: string): string {
-        const normalized = verdict.toLowerCase().replace(/\s+/g, '-');
-        return normalized;
-    }
+  getWorthClass(verdict: string): string {
+    const normalized = verdict.toLowerCase().replace(/\s+/g, '-');
+    return normalized;
+  }
 }
