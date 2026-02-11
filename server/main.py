@@ -147,6 +147,29 @@ async def health_check():
     }
 
 
+# ============= LLM SETTINGS ENDPOINTS =============
+
+from llm_config import llm_manager
+
+class LLMSettings(BaseModel):
+    provider: str
+    api_key: str | None = None
+
+@app.get("/api/settings/llm")
+async def get_llm_settings():
+    """Get current LLM configuration"""
+    return llm_manager.get_settings()
+
+@app.post("/api/settings/llm")
+async def update_llm_settings(settings: LLMSettings):
+    """Update LLM configuration"""
+    print(f"Updating LLM settings: Provider={settings.provider}")
+    llm_manager.update_settings(settings.provider, settings.api_key)
+    return {"status": "updated", "settings": llm_manager.get_settings()}
+
+# ============= END LLM SETTINGS ENDPOINTS =============
+
+
 # Valid categories for news
 VALID_CATEGORIES = ["general", "patches", "releases", "esports"]
 

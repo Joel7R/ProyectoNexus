@@ -5,11 +5,12 @@
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { SettingsModalComponent } from '../settings-modal/settings-modal.component';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterLink, RouterLinkActive, SettingsModalComponent],
   template: `
     <nav class="sidebar">
       <div class="logo">
@@ -64,12 +65,21 @@ import { CommonModule } from '@angular/common';
       </div>
 
       <div class="sidebar-footer">
+        <button class="settings-btn" (click)="showSettings = true">
+          <i class="icon">⚙️</i>
+          <span>Settings</span>
+        </button>
+        
         <div class="status-indicator">
           <div class="status-dot"></div>
           <span>ONLINE</span>
         </div>
       </div>
     </nav>
+    
+    @if (showSettings) {
+      <app-settings-modal (close)="showSettings = false" />
+    }
   `,
   styles: [`
     .sidebar {
@@ -210,6 +220,36 @@ import { CommonModule } from '@angular/common';
     .sidebar-footer {
       padding-top: var(--spacing-lg);
       border-top: 1px solid var(--glass-border);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+
+    .settings-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      background: transparent;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      transition: all 0.2s;
+      width: 100%;
+      text-align: left;
+      
+      &:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--text-muted);
+        color: var(--text-primary);
+      }
+      
+      .icon {
+        font-size: 1rem;
+      }
     }
 
     .status-indicator {
@@ -220,6 +260,7 @@ import { CommonModule } from '@angular/common';
       font-size: 0.75rem;
       color: var(--accent-success);
       letter-spacing: 0.1em;
+      padding-left: var(--spacing-sm);
     }
 
     .status-dot {
@@ -252,8 +293,15 @@ import { CommonModule } from '@angular/common';
       .logo-text,
       .logo-subtitle,
       .nav-text,
-      .sidebar-footer span {
+      .sidebar-footer span:not(.status-dot) {
         display: none;
+      }
+      
+      .settings-btn {
+        justify-content: center;
+        padding: var(--spacing-sm);
+        
+        span { display: none; }
       }
 
       .nav-item {
@@ -267,4 +315,6 @@ import { CommonModule } from '@angular/common';
     }
   `]
 })
-export class SidebarComponent { }
+export class SidebarComponent {
+  showSettings = false;
+}

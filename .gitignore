@@ -1,0 +1,8 @@
+server/config.json
+.agent/
+__pycache__/
+*.pyc
+node_modules/
+.angular/
+dist/
+.env

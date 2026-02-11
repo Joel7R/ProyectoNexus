@@ -5,7 +5,7 @@ Specialized in meta-builds, item stats, and tier lists
 import os
 from dataclasses import dataclass
 
-import ollama
+
 
 from tools.web_search import live_web_search
 from tools.scraper import scrape_gaming_content
@@ -41,10 +41,8 @@ class TacticianAgent:
     """Agent specialized in builds, stats, and meta analysis"""
     
     def __init__(self):
-        self.model = os.getenv("OLLAMA_MODEL", "llama3.2")
-        self.client = ollama.Client(
-            host=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-        )
+        from llm_config import llm_manager
+        self.llm = llm_manager
     
     async def analyze(self, game: str, query: str, version: str | None = None, language: str = "es") -> BuildResult:
         """Analyze builds and meta for a game"""
@@ -122,10 +120,10 @@ Genera un JSON con:
     "win_rate": "XX%" o null,
     "pick_rate": "XX%" o null,
     "items": [
-        {{"name": "...", "slot": "...", "stats": "...", "priority": 1-5}}
+        {{ "name": "...", "slot": "...", "stats": "...", "priority": 1-5 }}
     ],
     "skills": [
-        {{"name": "...", "description": "...", "max_first": true/false}}
+        {{ "name": "...", "description": "...", "max_first": true/false }}
     ],
     "runes": [...] o null,
     "playstyle": "descripción breve del estilo de juego en {language}",
@@ -136,21 +134,16 @@ Genera un JSON con:
         
         try:
             import asyncio
-            response = await asyncio.wait_for(
-                asyncio.to_thread(
-                    self.client.chat,
-                    model=self.model,
-                    messages=[
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {"role": "user", "content": synthesis_prompt}
-                    ],
-                    format="json"
-                ),
-                timeout=90.0
-            )
+            messages = [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": synthesis_prompt}
+            ]
+            
+            response_content = await self.llm.chat(messages, format="json")
             
             import json
-            result = json.loads(response.message.content)
+            cleaned_content = response_content.replace("```json", "").replace("```", "").strip()
+            result = json.loads(cleaned_content)
             
             artifact = format_to_artifact(data=result, template_type="build")
             

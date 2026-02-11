@@ -6,7 +6,7 @@ import os
 from typing import Literal
 from dataclasses import dataclass
 
-import ollama
+
 
 
 SYSTEM_PROMPT = """Eres el Orquestador de 'Gaming Nexus', IA especialista en videojuegos.
@@ -51,14 +51,12 @@ class IntentResult:
 class IntentOrchestrator:
     """
     Analyzes user intent and routes to appropriate agent.
-    Uses Ollama for local LLM inference.
+    Uses LLMManager for inference.
     """
     
     def __init__(self):
-        self.model = os.getenv("OLLAMA_MODEL", "llama3.2")
-        self.client = ollama.Client(
-            host=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-        )
+        from llm_config import llm_manager
+        self.llm = llm_manager
     
     async def analyze(self, user_message: str, context: str = "") -> IntentResult:
         """Analyze user message and extract intent"""
@@ -69,18 +67,16 @@ class IntentOrchestrator:
         
         try:
             import asyncio
-            response = await asyncio.to_thread(
-                self.client.chat,
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": prompt}
-                ],
-                format="json"
-            )
+            messages = [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt}
+            ]
+            
+            response_content = await self.llm.chat(messages, format="json")
             
             import json
-            result = json.loads(response.message.content)
+            cleaned_content = response_content.replace("```json", "").replace("```", "").strip()
+            result = json.loads(cleaned_content)
             
             is_followup = result.get("game", "").upper() == "FOLLOW_UP"
             

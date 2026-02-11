@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import json
 import asyncio
 
-import ollama
+
 
 from tools.web_search import live_web_search
 from tools.scraper import scrape_gaming_content
@@ -48,10 +48,8 @@ class GuideNavigatorAgent:
     """Agent specialized in walkthroughs and step-by-step guides"""
     
     def __init__(self):
-        self.model = os.getenv("OLLAMA_MODEL", "llama3.2")
-        self.client = ollama.Client(
-            host=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-        )
+        from llm_config import llm_manager
+        self.llm = llm_manager
     
     async def find_solution(self, game: str, query: str, language: str = "es") -> GuideResult:
         """Find guide or walkthrough with progressive hints structure"""
@@ -141,20 +139,15 @@ IMPORTANTE:
 """
         
         try:
-            response = await asyncio.wait_for(
-                asyncio.to_thread(
-                    self.client.chat,
-                    model=self.model,
-                    messages=[
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {"role": "user", "content": synthesis_prompt}
-                    ],
-                    format="json"
-                ),
-                timeout=120.0
-            )
+            messages = [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": synthesis_prompt}
+            ]
             
-            result = json.loads(response.message.content)
+            response_content = await self.llm.chat(messages, format="json")
+            
+            cleaned_content = response_content.replace("```json", "").replace("```", "").strip()
+            result = json.loads(cleaned_content)
             
             # Post-process to ensure frontend compatibility
             steps = result.get("steps", [])
