@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 
 @Component({
     selector: 'app-terminal-log',
-    standalone: true,
     imports: [CommonModule],
     template: `
     <div class="terminal-window glass-card">

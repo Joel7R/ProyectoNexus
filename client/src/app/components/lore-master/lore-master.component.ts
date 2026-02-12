@@ -9,7 +9,6 @@ import { LoreMasterService } from '../../services/lore-master.service';
 
 @Component({
     selector: 'app-lore-master',
-    standalone: true,
     imports: [CommonModule, FormsModule],
     template: `
     <div class="lore-master-container">

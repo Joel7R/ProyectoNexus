@@ -8,7 +8,6 @@ import { EventService, GameEvent, Rumor } from '../../services/event.service';
 
 @Component({
     selector: 'app-event-hub',
-    standalone: true,
     imports: [CommonModule],
     template: `
     <div class="event-hub">

@@ -5,7 +5,6 @@ import { LlmSettingsService } from '../../services/llm-settings.service';
 
 @Component({
     selector: 'app-settings-modal',
-    standalone: true,
     imports: [CommonModule, FormsModule],
     template: `
     <div class="modal-overlay" (click)="close.emit()">

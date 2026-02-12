@@ -3,10 +3,9 @@ import { CommonModule } from '@angular/common';
 import { ContentService, NewsItem } from '../../services/content.service';
 
 @Component({
-  selector: 'app-news',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'app-news',
+    imports: [CommonModule],
+    template: `
     <div class="container fade-in">
       <header class="section-header">
         <h1 class="text-primary glow-primary">LATEST TRANSMISSIONS</h1>
@@ -55,7 +54,7 @@ import { ContentService, NewsItem } from '../../services/content.service';
       </div>
     </div>
   `,
-  styles: [`
+    styles: [`
     .container {
       padding: 2rem;
       max-width: 1200px;

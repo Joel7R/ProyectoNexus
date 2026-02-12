@@ -3,10 +3,9 @@ import { CommonModule } from '@angular/common';
 import { ContentService } from '../../services/content.service';
 
 @Component({
-  selector: 'app-calendar',
-  standalone: true,
-  imports: [CommonModule],
-  template: `
+    selector: 'app-calendar',
+    imports: [CommonModule],
+    template: `
     <div class="container fade-in">
       <header class="section-header">
         <h1 class="text-primary glow-primary">UPCOMING DROPS</h1>
@@ -43,7 +42,7 @@ import { ContentService } from '../../services/content.service';
       </div>
     </div>
   `,
-  styles: [`
+    styles: [`
     .container {
       padding: 2rem;
       max-width: 800px;

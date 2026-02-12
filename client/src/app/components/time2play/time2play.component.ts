@@ -8,10 +8,9 @@ import { FormsModule } from '@angular/forms';
 import { Time2PlayService, type GameTimeData } from '../../services/time2play.service';
 
 @Component({
-  selector: 'app-time2play',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
+    selector: 'app-time2play',
+    imports: [CommonModule, FormsModule],
+    template: `
     <div class="time2play-container">
       <!-- Search Interface -->
       <div class="search-section">
@@ -223,7 +222,7 @@ import { Time2PlayService, type GameTimeData } from '../../services/time2play.se
       </div>
     </div>
   `,
-  styles: [`
+    styles: [`
     .time2play-container {
       max-width: 1000px;
       margin: 0 auto;

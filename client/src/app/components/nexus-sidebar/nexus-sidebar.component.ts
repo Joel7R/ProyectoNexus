@@ -10,10 +10,9 @@ import { BuildDashboardComponent } from '../build-dashboard/build-dashboard.comp
 import { StepGuideComponent } from '../step-guide/step-guide.component';
 
 @Component({
-  selector: 'app-nexus-sidebar',
-  standalone: true,
-  imports: [JsonPipe, TableArtifactComponent, BuildDashboardComponent, StepGuideComponent],
-  template: `
+    selector: 'app-nexus-sidebar',
+    imports: [JsonPipe, TableArtifactComponent, BuildDashboardComponent, StepGuideComponent],
+    template: `
     <div class="sidebar-container">
       <!-- Header -->
       <div class="sidebar-header">
@@ -76,7 +75,7 @@ import { StepGuideComponent } from '../step-guide/step-guide.component';
       </div>
     </div>
   `,
-  styles: [`
+    styles: [`
     .sidebar-container {
       display: flex;
       flex-direction: column;

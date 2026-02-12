@@ -6,10 +6,9 @@ import { Component, Input } from '@angular/core';
 import { UpperCasePipe } from '@angular/common';
 
 @Component({
-  selector: 'app-table-artifact',
-  standalone: true,
-  imports: [UpperCasePipe],
-  template: `
+    selector: 'app-table-artifact',
+    imports: [UpperCasePipe],
+    template: `
     <div class="table-artifact">
       @if (data['rows'] && data['rows'].length > 0) {
         <div class="table-wrapper">
@@ -60,7 +59,7 @@ import { UpperCasePipe } from '@angular/common';
       }
     </div>
   `,
-  styles: [`
+    styles: [`
     .table-artifact {
       width: 100%;
     }

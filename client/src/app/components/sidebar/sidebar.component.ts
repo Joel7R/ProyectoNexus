@@ -8,10 +8,9 @@ import { CommonModule } from '@angular/common';
 import { SettingsModalComponent } from '../settings-modal/settings-modal.component';
 
 @Component({
-  selector: 'app-sidebar',
-  standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, SettingsModalComponent],
-  template: `
+    selector: 'app-sidebar',
+    imports: [CommonModule, RouterLink, RouterLinkActive, SettingsModalComponent],
+    template: `
     <nav class="sidebar">
       <div class="logo">
         <span class="logo-text">
@@ -81,7 +80,7 @@ import { SettingsModalComponent } from '../settings-modal/settings-modal.compone
       <app-settings-modal (close)="showSettings = false" />
     }
   `,
-  styles: [`
+    styles: [`
     .sidebar {
       width: 260px;
       height: 100vh;

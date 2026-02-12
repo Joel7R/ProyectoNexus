@@ -5,10 +5,9 @@ import { DatePipe, CommonModule } from '@angular/common';
 import { TerminalLogComponent } from '../terminal-log/terminal-log.component';
 
 @Component({
-  selector: 'app-chat-stream',
-  standalone: true,
-  imports: [FormsModule, DatePipe, CommonModule, TerminalLogComponent],
-  template: `
+    selector: 'app-chat-stream',
+    imports: [FormsModule, DatePipe, CommonModule, TerminalLogComponent],
+    template: `
     <div class="chat-container">
       <!-- Messages Area -->
       <div class="chat-messages" #messagesContainer>
@@ -122,7 +121,7 @@ import { TerminalLogComponent } from '../terminal-log/terminal-log.component';
       </div>
     </div>
   `,
-  styles: [`
+    styles: [`
     .chat-container {
       display: flex;
       flex-direction: column;

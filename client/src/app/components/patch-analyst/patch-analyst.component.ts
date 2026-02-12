@@ -9,7 +9,6 @@ import { PatchAnalystService, PatchChange } from '../../services/patch-analyst.s
 
 @Component({
     selector: 'app-patch-analyst',
-    standalone: true,
     imports: [CommonModule, FormsModule],
     template: `
     <div class="patch-analyst">

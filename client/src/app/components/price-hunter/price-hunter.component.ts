@@ -8,10 +8,9 @@ import { FormsModule } from '@angular/forms';
 import { PriceHunterService, type DealData } from '../../services/price-hunter.service';
 
 @Component({
-  selector: 'app-price-hunter',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
+    selector: 'app-price-hunter',
+    imports: [CommonModule, FormsModule],
+    template: `
     <div class="price-hunter-container">
       <!-- Search Section -->
       <div class="search-section">
@@ -125,7 +124,7 @@ import { PriceHunterService, type DealData } from '../../services/price-hunter.s
       }
     </div>
   `,
-  styles: [`
+    styles: [`
     .price-hunter-container {
       max-width: 1200px;
       margin: 0 auto;

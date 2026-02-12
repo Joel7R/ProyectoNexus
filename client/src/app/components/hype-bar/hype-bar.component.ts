@@ -17,7 +17,6 @@ interface LiveEvent {
 
 @Component({
     selector: 'app-hype-bar',
-    standalone: true,
     imports: [CommonModule],
     template: `
     @if (liveEvent()) {

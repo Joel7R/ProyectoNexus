@@ -82,7 +82,7 @@ export class Time2PlayService {
         this.error.set(null);
 
         try {
-            const result = await firstValueFrom(
+            const result = await firstValueFrom<GameTimeData>(
                 this.http.post<GameTimeData>(`${this.apiUrl}/game`, { game_name: gameName })
             );
 
@@ -102,7 +102,7 @@ export class Time2PlayService {
         this.error.set(null);
 
         try {
-            const result = await firstValueFrom(
+            const result = await firstValueFrom<BacklogData>(
                 this.http.post<BacklogData>(`${this.apiUrl}/backlog`, { games })
             );
 
@@ -122,7 +122,7 @@ export class Time2PlayService {
         this.error.set(null);
 
         try {
-            const result = await firstValueFrom(
+            const result = await firstValueFrom<MarathonData>(
                 this.http.post<MarathonData>(`${this.apiUrl}/marathon`, {
                     game_name: gameName,
                     hours_per_day: hoursPerDay

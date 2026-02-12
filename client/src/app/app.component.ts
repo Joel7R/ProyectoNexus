@@ -11,10 +11,9 @@ import { NexusSidebarComponent } from './components/nexus-sidebar/nexus-sidebar.
 import { NexusService } from './services/nexus.service';
 
 @Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [RouterOutlet, NavbarComponent, SidebarComponent, HypeBarComponent, NexusSidebarComponent],
-  template: `
+    selector: 'app-root',
+    imports: [RouterOutlet, NavbarComponent, SidebarComponent, HypeBarComponent, NexusSidebarComponent],
+    template: `
     <div class="nexus-container">
       <!-- Ambient Hype Bar (Notifications) -->
       <app-hype-bar></app-hype-bar>
@@ -41,7 +40,7 @@ import { NexusService } from './services/nexus.service';
       </main>
     </div>
   `,
-  styles: [`
+    styles: [`
     .nexus-container {
       display: flex;
       flex-direction: row;

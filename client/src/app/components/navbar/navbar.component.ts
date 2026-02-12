@@ -2,10 +2,9 @@ import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 @Component({
-  selector: 'app-navbar',
-  standalone: true,
-  imports: [RouterLink, RouterLinkActive],
-  template: `
+    selector: 'app-navbar',
+    imports: [RouterLink, RouterLinkActive],
+    template: `
     <nav class="navbar glass-panel">
       <div class="logo">
         <span class="text-primary">NEXUS</span> COMMAND
@@ -26,7 +25,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       </div>
     </nav>
   `,
-  styles: [`
+    styles: [`
     .navbar {
       display: flex;
       justify-content: space-between;

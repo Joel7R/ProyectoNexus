@@ -43,6 +43,15 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+@app.get("/")
+async def root():
+    """Root endpoint to verify server is running"""
+    return {
+        "message": "Gaming Nexus API is running",
+        "health": "/api/health",
+        "frontend": "http://localhost:4200"
+    }
+
 # CORS Configuration
 cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:4200").split(",")
 app.add_middleware(
