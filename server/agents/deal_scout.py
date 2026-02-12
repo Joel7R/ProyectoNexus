@@ -4,7 +4,10 @@ Searches and compares game prices across multiple stores
 """
 from typing import Dict, List, Any
 import re
-from duckduckgo_search import DDGS
+try:
+    from ddgs import DDGS
+except ImportError:
+    from duckduckgo_search import DDGS
 from datetime import datetime, timedelta
 import json
 from pathlib import Path
@@ -102,17 +105,17 @@ class DealScoutAgent:
         print(f"[DealScout] Searching deals for '{game_name}'...")
         
         deals = []
-        reasoning = [f"Searching prices for '{game_name}' across stores..."]
+        reasoning = [f"Buscando precios para '{game_name}' en múltiples tiendas..."]
         
         ddgs = DDGS()
         
         for store_id, store_info in self.STORES.items():
             try:
-                query = f"{game_name} price site:{store_info['domain']}"
+                query = f"{game_name} price {store_info['name']}"
                 results = ddgs.text(query, max_results=3)
                 
                 if not results:
-                    reasoning.append(f"✗ {store_info['name']}: No results")
+                    reasoning.append(f"✗ {store_info['name']}: Sin resultados")
                     continue
                 
                 # Extract price from results

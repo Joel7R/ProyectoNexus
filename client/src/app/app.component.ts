@@ -4,17 +4,19 @@
  */
 import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { NavbarComponent } from './components/navbar/navbar.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { HypeBarComponent } from './components/hype-bar/hype-bar.component';
 import { NexusSidebarComponent } from './components/nexus-sidebar/nexus-sidebar.component';
 import { NexusService } from './services/nexus.service';
 
 @Component({
-    selector: 'app-root',
-    imports: [RouterOutlet, NavbarComponent, SidebarComponent, HypeBarComponent, NexusSidebarComponent],
-    template: `
+  selector: 'app-root',
+  imports: [RouterOutlet, SidebarComponent, HypeBarComponent, NexusSidebarComponent],
+  template: `
     <div class="nexus-container">
+      <!-- Top Navigation Bar -->
+      
+
       <!-- Ambient Hype Bar (Notifications) -->
       <app-hype-bar></app-hype-bar>
 
@@ -40,7 +42,7 @@ import { NexusService } from './services/nexus.service';
       </main>
     </div>
   `,
-    styles: [`
+  styles: [`
     .nexus-container {
       display: flex;
       flex-direction: row;

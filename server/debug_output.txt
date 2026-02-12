@@ -1,0 +1,6 @@
+Imported 'ddgs' from: C:\Users\joelr\Desktop\ProyectoNexus\server\venv\Lib\site-packages\ddgs\__init__.py
+DDGS class: <class 'ddgs._DDGSProxy'>
+DDGS.text signature: (self, query: str, **kwargs: Any) -> list[dict[str, typing.Any]]
+Imported 'duckduckgo_search' from: C:\Users\joelr\Desktop\ProyectoNexus\server\venv\Lib\site-packages\duckduckgo_search\__init__.py
+DDGS class from duckduckgo_search: <class 'duckduckgo_search.duckduckgo_search.DDGS'>
+DDGS.text signature (should match): (self, keywords: 'str', region: 'str | None' = None, safesearch: 'str' = 'moderate', timelimit: 'str | None' = None, backend: 'str' = 'auto', max_results: 'int | None' = None) -> 'list[dict[str, str]]'

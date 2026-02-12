@@ -28,11 +28,11 @@ class TimeEstimatorAgent:
             return {
                 "success": False,
                 "game": game_name,
-                "message": f"No data found for '{game_name}'. Try a different spelling or check HowLongToBeat.com manually.",
+                "message": f"No encontré datos para '{game_name}'. Intenta revisar la ortografía o busca manualmente en HowLongToBeat.com.",
                 "reasoning": [
-                    f"Searched HowLongToBeat for '{game_name}'",
-                    "No completion time data found",
-                    "Game may not be in HLTB database or name doesn't match"
+                    f"Buscado en HowLongToBeat: '{game_name}'",
+                    "No se encontraron datos de tiempo",
+                    "El juego podría no estar en la base de datos o el nombre es incorrecto"
                 ]
             }
         
@@ -50,10 +50,10 @@ class TimeEstimatorAgent:
             "worth": worth_analysis,
             "source": hltb_data['source'],
             "reasoning": [
-                f"Found '{game_name}' on HowLongToBeat",
-                f"Main Story: {hltb_data['main_story']}h" if hltb_data['main_story'] else "Main Story: N/A",
-                f"Main+Extras: {hltb_data['main_extras']}h" if hltb_data['main_extras'] else "Main+Extras: N/A",
-                f"Completionist: {hltb_data['completionist']}h" if hltb_data['completionist'] else "Completionist: N/A"
+                f"Encontrado '{game_name}' en HowLongToBeat",
+                f"Historia Principal: {hltb_data['main_story']}h" if hltb_data['main_story'] else "Historia Principal: N/A",
+                f"Historia + Extras: {hltb_data['main_extras']}h" if hltb_data['main_extras'] else "Historia + Extras: N/A",
+                f"Completista (100%): {hltb_data['completionist']}h" if hltb_data['completionist'] else "Completista: N/A"
             ]
         }
     

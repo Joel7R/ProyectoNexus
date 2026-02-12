@@ -5,6 +5,11 @@ from dataclasses import dataclass
 import google.generativeai as genai
 import ollama
 
+from dotenv import load_dotenv
+
+# Load environment variables immediately
+load_dotenv()
+
 # Configure persistence file
 CONFIG_FILE = "config.json"
 
@@ -46,8 +51,10 @@ class LLMManager:
                 print(f"Error loading config: {e}")
         
         # Override with env vars if not set in config (first run or env var priority)
-        if not self.config.model_ollama:
-             self.config.model_ollama = os.getenv("OLLAMA_MODEL", "llama3.2")
+        # Override with env vars (priority over config file for OLLAMA_MODEL if env is set)
+        env_model = os.getenv("OLLAMA_MODEL")
+        if env_model:
+             self.config.model_ollama = env_model
              
         # Load API key from env if not in config
         if not self.config.api_key:

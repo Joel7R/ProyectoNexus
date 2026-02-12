@@ -4,13 +4,11 @@ Specialized in tracking breaking news, patches, and gaming events
 """
 import os
 from dataclasses import dataclass
-
-
+from typing import List, Dict, Any
 
 from tools.web_search import live_web_search
 from tools.scraper import scrape_gaming_content
 from tools.formatter import format_to_artifact
-
 
 SYSTEM_PROMPT = """Eres 'Gaming Nexus - NewsScout', una IA especializada EXCLUSIVAMENTE en noticias de la industria del videojuego.
 
@@ -20,6 +18,7 @@ REGLAS CRÍTICAS:
 3. Filtro de Actualidad: Si la info tiene más de 6 meses y es un Live Service (LoL, Genshin, Valorant, Fortnite), ADVIERTE al usuario.
 4. Atribución: Cada dato clave lleva su fuente en formato [Fuente](url).
 5. Estructura: Respuesta breve en chat, datos técnicos en artifact lateral.
+6. IDIOMA: Responde SIEMPRE en ESPAÑOL.
 
 FORMATO DE RESPUESTA:
 - Resumen ejecutivo (2-3 líneas máximo) centrado en el impacto para el jugador.
@@ -123,24 +122,24 @@ class NewsScoutAgent:
                 print("NewsScout: Scrape timeout")
         
         # Use LLM to synthesize with CLR awareness
-        synthesis_prompt = f"""Analiza estas noticias sobre {game}. DETECTA EL IDIOMA DEL USUARIO: {language}.
+        synthesis_prompt = f"""Analiza estas noticias sobre {game}.
         
 FUENTES ENCONTRADAS:
 {contents}
 
 TU TAREA:
 1. Sintetiza las noticias más importantes.
-2. Si la fuente es en INGLÉS (ej: IGN, Bloomberg), TRADUCE el resumen al {language} pero mantén términos técnicos (nerf, buff, tier).
+2. Si la fuente es en INGLÉS (ej: IGN, Bloomberg), TRADUCE el resumen al ESPAÑOL pero mantén términos técnicos (nerf, buff, tier).
 3. Si hay rumores/leaks, indícalo claramente.
 
 Responde en JSON:
 {{
-    "summary": "Resumen ejecutivo en {language}...",
+    "summary": "Resumen ejecutivo en ESPAÑOL...",
     "news_items": [
         {{
-            "title": "Título traducido o original",
-            "date": "Fecha approx",
-            "description": "Resumen en {language}...",
+            "title": "Título traducido",
+            "date": "Fecha aprox",
+            "description": "Resumen en ESPAÑOL...",
             "url": "url_original",
             "source_lang": "en|es",
             "importance": "high|medium|low"

@@ -4,9 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { LlmSettingsService } from '../../services/llm-settings.service';
 
 @Component({
-    selector: 'app-settings-modal',
-    imports: [CommonModule, FormsModule],
-    template: `
+  selector: 'app-settings-modal',
+  imports: [CommonModule, FormsModule],
+  template: `
     <div class="modal-overlay" (click)="close.emit()">
       <div class="modal-content" (click)="$event.stopPropagation()">
         <div class="modal-header">
@@ -64,7 +64,7 @@ import { LlmSettingsService } from '../../services/llm-settings.service';
           <button class="cancel-btn" (click)="close.emit()">Cancel</button>
           <button 
             class="save-btn" 
-            [disabled]="settingsService.loading() || (selectedProvider === 'gemini' && !apiKey && !settingsService.settings().has_key)"
+            [disabled]="settingsService.loading()"
             (click)="save()">
             {{ settingsService.loading() ? 'Saving...' : 'Save Changes' }}
           </button>
@@ -72,7 +72,7 @@ import { LlmSettingsService } from '../../services/llm-settings.service';
       </div>
     </div>
   `,
-    styles: [`
+  styles: [`
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -261,30 +261,30 @@ import { LlmSettingsService } from '../../services/llm-settings.service';
   `]
 })
 export class SettingsModalComponent {
-    @Output() close = new EventEmitter<void>();
+  @Output() close = new EventEmitter<void>();
 
-    settingsService = inject(LlmSettingsService);
+  settingsService = inject(LlmSettingsService);
 
-    selectedProvider: 'ollama' | 'gemini' = 'ollama';
-    apiKey = '';
+  selectedProvider: 'ollama' | 'gemini' = 'ollama';
+  apiKey = '';
 
-    constructor() {
-        // Initialize state from existing settings
-        const current = this.settingsService.settings();
-        this.selectedProvider = current.provider;
-    }
+  constructor() {
+    // Initialize state from existing settings
+    const current = this.settingsService.settings();
+    this.selectedProvider = current.provider;
+  }
 
-    selectProvider(provider: 'ollama' | 'gemini') {
-        this.selectedProvider = provider;
-    }
+  selectProvider(provider: 'ollama' | 'gemini') {
+    this.selectedProvider = provider;
+  }
 
-    save() {
-        this.settingsService.updateSettings(
-            this.selectedProvider,
-            this.apiKey || undefined
-        ).subscribe({
-            next: () => this.close.emit(),
-            error: (err) => console.error('Error saving settings', err)
-        });
-    }
+  save() {
+    this.settingsService.updateSettings(
+      this.selectedProvider,
+      this.apiKey || undefined
+    ).subscribe({
+      next: () => this.close.emit(),
+      error: (err) => console.error('Error saving settings', err)
+    });
+  }
 }

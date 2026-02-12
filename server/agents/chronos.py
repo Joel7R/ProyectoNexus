@@ -3,7 +3,10 @@ Chronos Agent
 Provides game lore, story summaries, and character relationships
 """
 from typing import Dict, List, Any
-from duckduckgo_search import DDGS
+try:
+    from ddgs import DDGS
+except ImportError:
+    from duckduckgo_search import DDGS
 import re
 
 class ChronosAgent:
@@ -62,9 +65,8 @@ class ChronosAgent:
         else:  # full
             query = f"{game_name} complete story explained ending"
         
-        # Add site filters
-        site_filter = " OR ".join([f"site:{source}" for source in self.LORE_SOURCES])
-        full_query = f"{query} ({site_filter})"
+        # Simplified query without strict site filters
+        full_query = query + " game wiki lore"
         
         try:
             results = ddgs.text(full_query, max_results=5)
@@ -105,16 +107,16 @@ class ChronosAgent:
             
             if spoiler_level == "none":
                 summary = full_story[:300] + "..."
-                spoiler_warnings = ["This is a spoiler-free summary"]
+                spoiler_warnings = ["Este es un resumen sin spoilers"]
             elif spoiler_level == "light":
                 summary = full_story[:600] + "..."
-                spoiler_warnings = ["Contains light spoilers about main plot"]
+                spoiler_warnings = ["Contiene spoilers leves de la trama principal"]
             else:
                 summary = full_story[:1000] + "..."
-                spoiler_warnings = ["⚠️ FULL SPOILERS - Complete story details"]
+                spoiler_warnings = ["⚠️ FULL SPOILERS - Detalles completos de la historia"]
             
-            reasoning.append(f"Found {len(results)} sources")
-            reasoning.append(f"Extracted {len(key_events)} key events")
+            reasoning.append(f"Encontradas {len(results)} fuentes")
+            reasoning.append(f"Extraídos {len(key_events)} eventos clave")
             
             return {
                 "success": True,

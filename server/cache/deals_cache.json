@@ -1,0 +1,79 @@
+{
+  "minecraft": {
+    "success": true,
+    "game": "Minecraft",
+    "deals": [
+      {
+        "store": "Instant Gaming",
+        "store_id": "instant_gaming",
+        "icon": "⚡",
+        "price": 14.89,
+        "currency": "USD",
+        "url": "https://www.instant-gaming.com/",
+        "is_best": true
+      }
+    ],
+    "best_deal": {
+      "store": "Instant Gaming",
+      "store_id": "instant_gaming",
+      "icon": "⚡",
+      "price": 14.89,
+      "currency": "USD",
+      "url": "https://www.instant-gaming.com/",
+      "is_best": true
+    },
+    "savings": 0,
+    "savings_percent": 0,
+    "reasoning": [
+      "Buscando precios para 'Minecraft' en múltiples tiendas...",
+      "✗ Steam: Price not found",
+      "✗ Epic Games: Price not found",
+      "✗ GOG: Price not found",
+      "✓ Instant Gaming: $14.89"
+    ],
+    "cached_at": "2026-02-12T21:40:28.582400"
+  },
+  "stardew valley": {
+    "success": true,
+    "game": "Stardew Valley",
+    "deals": [
+      {
+        "store": "Steam",
+        "store_id": "steam",
+        "icon": "🎮",
+        "price": 14.99,
+        "currency": "USD",
+        "url": "https://store.steampowered.com/app/413150/Stardew_Valley/",
+        "is_best": true
+      },
+      {
+        "store": "Epic Games",
+        "store_id": "epic",
+        "icon": "🎯",
+        "price": 49.99,
+        "currency": "USD",
+        "url": "https://store.epicgames.com/en-US/sales-and-specials/",
+        "is_best": false
+      }
+    ],
+    "best_deal": {
+      "store": "Steam",
+      "store_id": "steam",
+      "icon": "🎮",
+      "price": 14.99,
+      "currency": "USD",
+      "url": "https://store.steampowered.com/app/413150/Stardew_Valley/",
+      "is_best": true
+    },
+    "savings": 35.0,
+    "savings_percent": 70.0,
+    "reasoning": [
+      "Buscando precios para 'Stardew Valley' en múltiples tiendas...",
+      "✓ Steam: $14.99",
+      "✓ Epic Games: $49.99",
+      "✗ GOG: Price not found",
+      "✗ Instant Gaming: Price not found"
+    ],
+    "cached_at": "2026-02-12T21:58:56.706987"
+  }
+}

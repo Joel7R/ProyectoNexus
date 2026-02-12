@@ -4,7 +4,10 @@ Detects gaming events, conferences, and aggregates rumors
 """
 from typing import Dict, List, Any
 from datetime import datetime, timedelta
-from duckduckgo_search import DDGS
+try:
+    from ddgs import DDGS
+except ImportError:
+    from duckduckgo_search import DDGS
 import re
 
 class EventScoutAgent:
@@ -49,7 +52,7 @@ class EventScoutAgent:
         """
         print(f"[EventScout] Searching events in next {hours} hours")
         
-        reasoning = [f"Scanning gaming news for events in next {hours}h"]
+        reasoning = [f"Buscando eventos de videojuegos en las próximas {hours}h"]
         events = []
         
         ddgs = DDGS()
@@ -79,7 +82,7 @@ class EventScoutAgent:
                             "source_title": title
                         }
                         events.append(event)
-                        reasoning.append(f"Found: {event_name} - {date_match}")
+                        reasoning.append(f"Encontrado: {event_name} - {date_match}")
                         break  # Only need one result per event
                         
             except Exception as e:
@@ -216,12 +219,20 @@ class EventScoutAgent:
         # Simple parsing - would need more robust implementation
         try:
             # Try common formats
-            for fmt in ['%B %d, %Y', '%B %d', '%b %d, %Y', '%m/%d/%Y']:
+            # Try common formats
+            for fmt in ['%B %d, %Y', '%b %d, %Y', '%m/%d/%Y']:
                 try:
-                    dt = datetime.strptime(date_str, fmt)
-                    if dt.year == 1900:  # No year specified
-                        dt = dt.replace(year=2026)
-                    return dt
+                    return datetime.strptime(date_str, fmt)
+                except:
+                    continue
+            
+            # Handle formats without year by appending current/next year
+            for fmt in ['%B %d', '%b %d']:
+                try:
+                     # Append default year to avoid DeprecationWarning
+                     target_year = 2026
+                     full_date_str = f"{date_str}, {target_year}"
+                     return datetime.strptime(full_date_str, fmt + ", %Y")
                 except:
                     continue
         except:

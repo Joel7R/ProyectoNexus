@@ -1,0 +1,1 @@
+DDGS.news signature: (self, keywords: 'str', region: 'str' = 'us-en', safesearch: 'str' = 'moderate', timelimit: 'str | None' = None, max_results: 'int | None' = None) -> 'list[dict[str, str]]'

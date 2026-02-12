@@ -6,7 +6,10 @@ import re
 import json
 from pathlib import Path
 from datetime import datetime, timedelta
-from duckduckgo_search import DDGS
+try:
+    from ddgs import DDGS
+except ImportError:
+    from duckduckgo_search import DDGS
 
 # Cache file path
 CACHE_FILE = Path(__file__).parent.parent / "cache" / "hltb_cache.json"
@@ -85,7 +88,7 @@ def search_hltb(game_name: str) -> dict:
     try:
         # Search with DuckDuckGo
         ddgs = DDGS()
-        query = f"{game_name} site:howlongtobeat.com"
+        query = f"{game_name} how long to beat"
         results = ddgs.text(query, max_results=5)
         
         if not results:

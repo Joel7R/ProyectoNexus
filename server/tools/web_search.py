@@ -3,7 +3,10 @@ Live Web Search Tool
 Uses DuckDuckGo for real-time gaming information retrieval
 """
 from typing import Literal
-from duckduckgo_search import DDGS
+try:
+    from ddgs import DDGS
+except ImportError:
+    from duckduckgo_search import DDGS
 
 
 # Domain filters by search type - Expanded for better coverage
@@ -104,13 +107,13 @@ async def live_web_search(
             fetch_count = max_results * 3 
             if "news" in search_type.lower():
                 return list(ddgs.news(
-                    keywords=search_keywords,
+                    search_keywords,
                     max_results=fetch_count,
                     timelimit="m" 
                 ))
             else:
                 return list(ddgs.text(
-                    keywords=final_query,
+                    final_query,
                     max_results=fetch_count
                 ))
 
