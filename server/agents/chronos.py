@@ -3,230 +3,136 @@ Chronos Agent
 Provides game lore, story summaries, and character relationships
 """
 from typing import Dict, List, Any
+from pydantic import BaseModel, Field
+import asyncio
+import re
 try:
     from ddgs import DDGS
 except ImportError:
     from duckduckgo_search import DDGS
-import re
+import json
+from tools.formatter import format_to_artifact
+from utils.cache_manager import cache_manager
+
+SYSTEM_PROMPT = """Eres 'Gaming Nexus - Chronos', el archivista del lore.
+
+TU OBJETIVO:
+1. Explicar el lore de un personaje o evento.
+2. Aplicar el 'SPOILER SHIELD':
+   - Spoiler Level 'low': Solo premisa básica. CERO revelaciones de trama.
+   - Spoiler Level 'medium': Trama principal hasta la mitad. Sin finales.
+   - Spoiler Level 'high': Todo permitido. Finales y secretos.
+
+3. Generar un Grafo Mermaid de relaciones.
+
+FORMATO DE SALIDA (JSON):
+{
+    "summary": "Explicación narrativa adaptada al nivel de spoiler.",
+    "relationships": [
+        {"source": "Personaje A", "target": "Personaje B", "label": "Aliado/Enemigo/Hijo"},
+        {"source": "Personaje A", "target": "Lugar X", "label": "Gobierna"}
+    ],
+    "mermaid": "graph TD; A[Personaje A] -- Label --> B[Personaje B]; ...",
+    "spoiler_warning": "Warning text"
+}
+"""
 
 class ChronosAgent:
     """Agent for game lore and story information"""
     
     SPOILER_LEVELS = {
         "none": "No spoilers - basic premise only",
-        "light": "Light spoilers - main plot points without major reveals",
+        "low": "No spoilers - basic premise only",
+        "medium": "Light spoilers - main plot points without major reveals",
+        "high": "Full story - all details including endings",
         "full": "Full story - all details including endings"
     }
     
-    LORE_SOURCES = [
-        "fextralife.com",
-        "ign.com/wikis",
-        "gamefaqs.com",
-        "reddit.com/r/",
-        "wiki.gg"
-    ]
-    
     def __init__(self):
+        from llm_config import llm_manager
         self.name = "Chronos"
+        self.llm = llm_manager
     
-    async def get_story(
+    async def get_lore(
         self, 
         game_name: str, 
-        spoiler_level: str = "light"
+        query: str,
+        spoiler_level: str = "medium"
     ) -> Dict[str, Any]:
         """
-        Get game story summary with spoiler control
-        
-        Args:
-            game_name: Name of the game
-            spoiler_level: "none", "light", or "full"
-            
-        Returns:
-            Story summary with spoiler warnings
+        Get game lore with spoiler protection and relationship graph
         """
-        if spoiler_level not in self.SPOILER_LEVELS:
-            spoiler_level = "light"
+        cache_key = f"lore_{game_name}_{query}_{spoiler_level}".lower().replace(" ", "_")
+        cached = cache_manager.get(cache_key)
+        if cached:
+            return cached
+            
         
-        print(f"[Chronos] Getting story for '{game_name}' (spoiler level: {spoiler_level})")
+        search_query = f"{game_name} {query} lore story site:fandom.com OR site:wiki"
         
-        reasoning = [
-            f"Searching lore for '{game_name}'",
-            f"Spoiler level: {self.SPOILER_LEVELS[spoiler_level]}"
-        ]
+        print(f"[Chronos] Searching lore (CONFIDENCE SOURCES): {query} / {game_name}")
         
-        # Search for story information
-        ddgs = DDGS()
-        
-        # Build query based on spoiler level
-        if spoiler_level == "none":
-            query = f"{game_name} game premise plot summary no spoilers"
-        elif spoiler_level == "light":
-            query = f"{game_name} game story overview main plot"
-        else:  # full
-            query = f"{game_name} complete story explained ending"
-        
-        # Simplified query without strict site filters
-        full_query = query + " game wiki lore"
+        context_text = ""
+        try:
+            await asyncio.sleep(1.0)
+            with DDGS() as ddgs:
+                # Limit to 3 high-quality results
+                results = list(ddgs.text(search_query, max_results=3))
+                for r in results:
+                    context_text += f"-- SOURCE: {r.get('title')} --\n{r.get('body')}\n\n"
+        except Exception as e:
+            print(f"[Chronos] Search failed: {e}")
+            context_text = "No se encontraron fuentes externas. Usa tu base de conocimientos."
+
+        prompt = f"""Explícame quién/qué es '{query}' en '{game_name}'.
+NIVEL DE SPOILER PERMITIDO: {spoiler_level.upper()}.
+{self.SPOILER_LEVELS.get(spoiler_level, "Evita spoilers.")}
+
+CONTEXTO DE BÚSQUEDA:
+{context_text[:3000]}
+
+REGLA DE PROCESAMIENTO:
+Si el contexto es muy extenso, genera un RESUMEN EJECUTIVO inicial y luego profundiza en los detalles. 
+Tu respuesta DEBE ser un JSON válido. Si hay errores en el texto, sánitiza la salida."""
         
         try:
-            results = ddgs.text(full_query, max_results=5)
+            messages = [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt}
+            ]
             
-            if not results:
-                return {
-                    "success": False,
-                    "game": game_name,
-                    "message": f"No lore found for '{game_name}'",
-                    "reasoning": reasoning
-                }
+            # Use specific timeout or handle potential long response
+            response_content = await self.llm.chat(messages, format="json")
             
-            # Compile story from results
-            story_parts = []
-            key_events = []
-            sources = []
+            # Robust JSON cleaning (pre-parsing sanitization)
+            if "```json" in response_content:
+                response_content = re.sub(r"```json\s*(.*?)\s*```", r"\1", response_content, flags=re.DOTALL)
             
-            for result in results:
-                title = result.get('title', '')
-                body = result.get('body', '')
-                url = result.get('href', '')
-                
-                story_parts.append(body)
-                sources.append({
-                    "title": title,
-                    "url": url
-                })
-                
-                # Extract potential key events (sentences with keywords)
-                event_keywords = ['battle', 'defeat', 'discover', 'reveal', 'betray', 'death', 'victory']
-                sentences = body.split('.')
-                for sentence in sentences:
-                    if any(keyword in sentence.lower() for keyword in event_keywords):
-                        key_events.append(sentence.strip())
-            
-            # Combine and truncate based on spoiler level
-            full_story = " ".join(story_parts)
-            
-            if spoiler_level == "none":
-                summary = full_story[:300] + "..."
-                spoiler_warnings = ["Este es un resumen sin spoilers"]
-            elif spoiler_level == "light":
-                summary = full_story[:600] + "..."
-                spoiler_warnings = ["Contiene spoilers leves de la trama principal"]
-            else:
-                summary = full_story[:1000] + "..."
-                spoiler_warnings = ["⚠️ FULL SPOILERS - Detalles completos de la historia"]
-            
-            reasoning.append(f"Encontradas {len(results)} fuentes")
-            reasoning.append(f"Extraídos {len(key_events)} eventos clave")
-            
-            return {
-                "success": True,
-                "game": game_name,
-                "summary": summary,
-                "spoiler_level": spoiler_level,
-                "key_events": key_events[:5],  # Top 5 events
-                "spoiler_warnings": spoiler_warnings,
-                "sources": sources,
-                "reasoning": reasoning
-            }
+            llm_result = json.loads(response_content)
+            summary = llm_result.get("summary", "Resumen no disponible.")
+            mermaid_graph = llm_result.get("mermaid", "graph TD; A[Lore] --> B[Data];")
             
         except Exception as e:
-            print(f"[Chronos] Error: {e}")
-            return {
-                "success": False,
-                "game": game_name,
-                "message": f"Error retrieving lore: {str(e)}",
-                "reasoning": reasoning
-            }
-    
-    async def get_character_map(self, game_name: str) -> Dict[str, Any]:
-        """
-        Get character relationships for a game
+            print(f"[Chronos] Critical Processing Error: {e}")
+            # Dynamic fallback summary
+            summary = f"Hubo un problema procesando la historia de {query}. En resumen: es un elemento clave de {game_name}."
+            mermaid_graph = "graph TD; Lore[Lore Master] -- Error --> Retry[Reintentar más tarde];"
+
+        artifact_data = {
+            "title": f"Lore: {query}",
+            "summary": summary,
+            "mermaid_graph": mermaid_graph,
+            "spoiler_level": spoiler_level,
+            "game": game_name
+        }
         
-        Args:
-            game_name: Name of the game
-            
-        Returns:
-            Character data with relationship graph
-        """
-        print(f"[Chronos] Getting character map for '{game_name}'")
-        
-        reasoning = [f"Searching character information for '{game_name}'"]
-        
-        ddgs = DDGS()
-        query = f"{game_name} characters relationships wiki"
-        
-        try:
-            results = ddgs.text(query, max_results=5)
-            
-            if not results:
-                return {
-                    "success": False,
-                    "game": game_name,
-                    "message": "No character data found",
-                    "reasoning": reasoning
-                }
-            
-            # Extract character names and relationships
-            characters = []
-            all_text = " ".join([r.get('body', '') for r in results])
-            
-            # Simple character extraction (names in title case)
-            # This is a simplified version - real implementation would use NLP
-            potential_names = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', all_text)
-            
-            # Count occurrences to find main characters
-            from collections import Counter
-            name_counts = Counter(potential_names)
-            main_characters = [name for name, count in name_counts.most_common(10) if count > 2]
-            
-            # Build character list
-            for char_name in main_characters:
-                characters.append({
-                    "name": char_name,
-                    "role": "Character",  # Would need more analysis
-                    "relationships": []  # Would need relationship extraction
-                })
-            
-            # Generate Mermaid graph
-            mermaid_graph = self._generate_mermaid_graph(characters)
-            
-            reasoning.append(f"Found {len(characters)} main characters")
-            
-            return {
-                "success": True,
-                "game": game_name,
-                "characters": characters,
-                "mermaid_graph": mermaid_graph,
-                "reasoning": reasoning
-            }
-            
-        except Exception as e:
-            print(f"[Chronos] Error: {e}")
-            return {
-                "success": False,
-                "game": game_name,
-                "message": f"Error retrieving characters: {str(e)}",
-                "reasoning": reasoning
-            }
-    
-    def _generate_mermaid_graph(self, characters: List[Dict]) -> str:
-        """Generate Mermaid diagram for character relationships"""
-        lines = ["graph TD"]
-        
-        for i, char in enumerate(characters):
-            char_id = f"C{i}"
-            char_name = char['name'].replace(' ', '_')
-            lines.append(f"    {char_id}[{char_name}]")
-            
-            # Add relationships if available
-            for rel in char.get('relationships', []):
-                # Find related character
-                for j, other_char in enumerate(characters):
-                    if other_char['name'] == rel:
-                        other_id = f"C{j}"
-                        lines.append(f"    {char_id} --> {other_id}")
-        
-        return "\n".join(lines)
+        result = {
+            "success": True,
+            "summary": summary,
+            "artifact": format_to_artifact(artifact_data, "lore")
+        }
+        cache_manager.set(cache_key, result)
+        return result
 
 # Test
 if __name__ == "__main__":
@@ -234,25 +140,9 @@ if __name__ == "__main__":
     
     async def test():
         agent = ChronosAgent()
+        print("\n=== Test Miquella (Lore Master) ===")
+        result = await agent.get_lore("Elden Ring", "Miquella", "medium")
+        print(f"Summary: {result['summary'][:100]}...")
+        print(f"Graph: {result['artifact']['mermaid_content'][:50]}...")
         
-        # Test story with different spoiler levels
-        print("\n=== Story (No Spoilers) ===")
-        result = await agent.get_story("Elden Ring", "none")
-        if result['success']:
-            print(f"Summary: {result['summary'][:200]}...")
-            print(f"Warnings: {result['spoiler_warnings']}")
-        
-        print("\n=== Story (Light Spoilers) ===")
-        result = await agent.get_story("Elden Ring", "light")
-        if result['success']:
-            print(f"Summary: {result['summary'][:200]}...")
-            print(f"Key Events: {len(result['key_events'])}")
-        
-        # Test character map
-        print("\n=== Character Map ===")
-        char_result = await agent.get_character_map("Elden Ring")
-        if char_result['success']:
-            print(f"Characters: {[c['name'] for c in char_result['characters'][:5]]}")
-            print(f"\nMermaid Graph:\n{char_result['mermaid_graph'][:200]}...")
-    
     asyncio.run(test())

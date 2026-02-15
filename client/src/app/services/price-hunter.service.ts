@@ -25,6 +25,14 @@ export interface DealSearchResult {
     savings_percent: number;
     reasoning: string[];
     message?: string;
+    artifact?: {
+        display: string;
+        data?: {
+            deals?: DealData[];
+            [key: string]: any;
+        };
+        [key: string]: any;
+    };
 }
 
 @Injectable({
@@ -47,6 +55,21 @@ export class PriceHunterService {
             const result = await firstValueFrom(
                 this.http.post<DealSearchResult>(`${this.apiUrl}/search`, { game_name: gameName })
             );
+
+            // Ensure deals array exists - extract from artifact.data if needed
+            if (!result.deals && result.artifact?.data?.deals) {
+                result.deals = result.artifact.data.deals;
+            }
+
+            // Ensure deals is always an array
+            if (!result.deals) {
+                result.deals = [];
+            }
+
+            // Find best deal if not already set
+            if (!result.best_deal && result.deals.length > 0) {
+                result.best_deal = result.deals.find(d => d.is_best) || result.deals[0];
+            }
 
             this.currentDeals.set(result);
             return result;

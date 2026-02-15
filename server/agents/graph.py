@@ -99,9 +99,9 @@ class GamingNexusGraph:
         )
         state["agent_result"] = {
             "type": "news",
-            "summary": result.summary,
-            "artifact": result.artifact,
-            "sources": result.sources
+            "summary": result.get('summary', ''),
+            "artifact": result.get('artifact', {}),
+            "sources": result.get('sources', [])
         }
         return state
     
@@ -116,10 +116,10 @@ class GamingNexusGraph:
         )
         state["agent_result"] = {
             "type": "build",
-            "summary": result.summary,
-            "artifact": result.artifact,
-            "sources": result.sources,
-            "items": result.items
+            "summary": result.get('summary', ''),
+            "artifact": result.get('artifact', {}),
+            "sources": result.get('sources', []),
+            "items": result.get('items', [])
         }
         return state
     
@@ -133,9 +133,9 @@ class GamingNexusGraph:
         )
         state["agent_result"] = {
             "type": "guide",
-            "summary": result.summary,
-            "artifact": result.artifact,
-            "sources": result.sources
+            "summary": result.get('summary', ''),
+            "artifact": result.get('artifact', {}),
+            "sources": result.get('sources', [])
         }
         return state
     

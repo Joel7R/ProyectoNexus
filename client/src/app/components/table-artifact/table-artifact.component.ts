@@ -6,16 +6,16 @@ import { Component, Input } from '@angular/core';
 import { UpperCasePipe } from '@angular/common';
 
 @Component({
-    selector: 'app-table-artifact',
-    imports: [UpperCasePipe],
-    template: `
+  selector: 'app-table-artifact',
+  imports: [UpperCasePipe],
+  template: `
     <div class="table-artifact">
-      @if (data['rows'] && data['rows'].length > 0) {
+      @if (data?.['rows'] && data['rows'].length > 0) {
         <div class="table-wrapper">
           <table class="nexus-table">
             <thead>
               <tr>
-                @for (col of data['columns'] || []; track col.key) {
+                @for (col of data?.['columns'] || []; track col.key) {
                   <th>{{ col.label }}</th>
                 }
               </tr>
@@ -23,7 +23,7 @@ import { UpperCasePipe } from '@angular/common';
             <tbody>
               @for (row of data['rows']; track $index) {
                 <tr (click)="onRowClick(row)">
-                  @for (col of data['columns'] || []; track col.key) {
+                  @for (col of data?.['columns'] || []; track col.key) {
                     <td>
                       @if (col.key === 'url') {
                         <a [href]="row[col.key]" target="_blank" class="table-link">
@@ -44,7 +44,7 @@ import { UpperCasePipe } from '@angular/common';
           </table>
         </div>
         
-        @if (data['pagination']) {
+        @if (data?.['pagination']) {
           <div class="table-pagination">
             <span class="pagination-info">
               Mostrando {{ data['rows'].length }} resultados
@@ -59,7 +59,7 @@ import { UpperCasePipe } from '@angular/common';
       }
     </div>
   `,
-    styles: [`
+  styles: [`
     .table-artifact {
       width: 100%;
     }

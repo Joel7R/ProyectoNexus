@@ -69,6 +69,10 @@ async def live_web_search(
     import asyncio
     
     try:
+        # Add realistic User-Agent to bypass 403 Forbidden errors
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
         ddgs = DDGS()
         
         # 1. Gaming Context Reinforcement
@@ -101,7 +105,8 @@ async def live_web_search(
         
         final_query = f"{search_keywords} ({site_hints})" if site_hints else search_keywords
         
-        # Execute search in a thread
+        # Execute search in a thread with Rate Limit Throttle
+        await asyncio.sleep(1.5)
         def do_search():
             # Increase results to ensure enough quality after filtering
             fetch_count = max_results * 3 

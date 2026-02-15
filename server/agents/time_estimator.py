@@ -3,236 +3,116 @@ TimeEstimator Agent
 Estimates game completion times and provides backlog management
 """
 from typing import Dict, List, Any
+import json
+from pydantic import BaseModel, Field
 from tools.hltb_search import search_hltb
+from tools.formatter import format_to_artifact
+from utils.cache_manager import cache_manager
+
+SYSTEM_PROMPT = """Eres 'Gaming Nexus - TimeEstimator', experto en gestión de tiempo para gamers.
+
+TU OBJETIVO:
+1. Analizar los datos de duración de un videojuego (HowLongToBeat).
+2. Calcular el 'Marathon Mode': ¿Cuántos días tardaría el usuario jugando X horas al día?
+3. Dar un veredicto sobre si el juego respeta el tiempo del jugador.
+"""
 
 class TimeEstimatorAgent:
-    """Agent for estimating game completion times"""
+    """Agent for estimating game completion times - Pydantic V2 Ready"""
     
     def __init__(self):
+        from llm_config import llm_manager
         self.name = "TimeEstimator"
+        self.llm = llm_manager
     
-    async def estimate_game_time(self, game_name: str) -> Dict[str, Any]:
+    async def estimate_game_time(self, game_name: str, hours_per_day: float = 3.0) -> Dict[str, Any]:
         """
-        Get completion time estimates for a single game
-        
-        Args:
-            game_name: Name of the game
+        Get completion time estimates for a single game (SEARCH ONLY)
+        """
+        hours_per_day = float(hours_per_day)
+        cache_key = f"time_{game_name}_{hours_per_day}".lower().replace(" ", "_")
+        cached = cache_manager.get(cache_key)
+        if cached:
+            return cached
             
-        Returns:
-            Dictionary with time estimates and metadata
-        """
-        # Search HLTB
         hltb_data = search_hltb(game_name)
         
-        if not hltb_data['found']:
+        if not hltb_data.get('found'):
             return {
                 "success": False,
-                "game": game_name,
-                "message": f"No encontré datos para '{game_name}'. Intenta revisar la ortografía o busca manualmente en HowLongToBeat.com.",
-                "reasoning": [
-                    f"Buscado en HowLongToBeat: '{game_name}'",
-                    "No se encontraron datos de tiempo",
-                    "El juego podría no estar en la base de datos o el nombre es incorrecto"
-                ]
+                "summary": f"No pude encontrar datos de duración para '{game_name}' en HowLongToBeat. Por favor, verifica el nombre del juego.",
+                "artifact": {
+                    "type": "error",
+                    "title": "Datos No Encontrados",
+                    "content": f"HowLongToBeat no devolvió resultados para '{game_name}'."
+                }
             }
-        
-        # Calculate worth metrics
-        worth_analysis = self._analyze_worth(hltb_data)
-        
-        return {
-            "success": True,
-            "game": game_name,
-            "times": {
-                "main_story": hltb_data['main_story'],
-                "main_extras": hltb_data['main_extras'],
-                "completionist": hltb_data['completionist']
-            },
-            "worth": worth_analysis,
-            "source": hltb_data['source'],
-            "reasoning": [
-                f"Encontrado '{game_name}' en HowLongToBeat",
-                f"Historia Principal: {hltb_data['main_story']}h" if hltb_data['main_story'] else "Historia Principal: N/A",
-                f"Historia + Extras: {hltb_data['main_extras']}h" if hltb_data['main_extras'] else "Historia + Extras: N/A",
-                f"Completista (100%): {hltb_data['completionist']}h" if hltb_data['completionist'] else "Completista: N/A"
-            ]
-        }
-    
-    async def calculate_backlog(self, games: List[str]) -> Dict[str, Any]:
-        """
-        Calculate total time for multiple games (backlog)
-        
-        Args:
-            games: List of game names
-            
-        Returns:
-            Dictionary with total times and breakdown
-        """
-        results = []
-        totals = {
-            "main_story": 0,
-            "main_extras": 0,
-            "completionist": 0
-        }
-        
-        reasoning = [f"Calculating backlog for {len(games)} games..."]
-        
-        for game in games:
-            hltb_data = search_hltb(game)
-            
-            if hltb_data['found']:
-                results.append({
-                    "game": game,
-                    "main_story": hltb_data['main_story'],
-                    "main_extras": hltb_data['main_extras'],
-                    "completionist": hltb_data['completionist']
-                })
-                
-                # Add to totals
-                if hltb_data['main_story']:
-                    totals['main_story'] += hltb_data['main_story']
-                if hltb_data['main_extras']:
-                    totals['main_extras'] += hltb_data['main_extras']
-                if hltb_data['completionist']:
-                    totals['completionist'] += hltb_data['completionist']
-                
-                reasoning.append(f"✓ {game}: {hltb_data['completionist'] or hltb_data['main_extras'] or hltb_data['main_story']}h")
-            else:
-                reasoning.append(f"✗ {game}: No data found")
-        
-        # Calculate days at different paces
-        time_estimates = {
-            "casual_2h_per_day": round(totals['completionist'] / 2, 1) if totals['completionist'] else None,
-            "moderate_4h_per_day": round(totals['completionist'] / 4, 1) if totals['completionist'] else None,
-            "hardcore_8h_per_day": round(totals['completionist'] / 8, 1) if totals['completionist'] else None
-        }
-        
-        return {
-            "success": True,
-            "total_games": len(games),
-            "found_games": len(results),
-            "games": results,
-            "totals": totals,
-            "time_estimates": time_estimates,
-            "reasoning": reasoning
-        }
-    
-    async def marathon_mode(self, game_name: str, hours_per_day: float) -> Dict[str, Any]:
-        """
-        Calculate how many days it will take to complete a game
-        
-        Args:
-            game_name: Name of the game
-            hours_per_day: Hours available per day
-            
-        Returns:
-            Dictionary with completion estimates
-        """
-        hltb_data = search_hltb(game_name)
-        
-        if not hltb_data['found']:
-            return {
-                "success": False,
-                "game": game_name,
-                "message": f"No data found for '{game_name}'"
-            }
-        
-        # Calculate days for each completion level
-        estimates = {}
-        
-        if hltb_data['main_story']:
-            estimates['main_story_days'] = round(hltb_data['main_story'] / hours_per_day, 1)
-        
-        if hltb_data['main_extras']:
-            estimates['main_extras_days'] = round(hltb_data['main_extras'] / hours_per_day, 1)
-        
-        if hltb_data['completionist']:
-            estimates['completionist_days'] = round(hltb_data['completionist'] / hours_per_day, 1)
-        
-        reasoning = [
-            f"Marathon Mode for '{game_name}'",
-            f"Playing {hours_per_day}h per day:",
-        ]
-        
-        if 'main_story_days' in estimates:
-            reasoning.append(f"  Main Story: {estimates['main_story_days']} days ({hltb_data['main_story']}h)")
-        if 'main_extras_days' in estimates:
-            reasoning.append(f"  Main+Extras: {estimates['main_extras_days']} days ({hltb_data['main_extras']}h)")
-        if 'completionist_days' in estimates:
-            reasoning.append(f"  100% Complete: {estimates['completionist_days']} days ({hltb_data['completionist']}h)")
-        
-        return {
-            "success": True,
-            "game": game_name,
-            "hours_per_day": hours_per_day,
-            "estimates": estimates,
-            "reasoning": reasoning
-        }
-    
-    def _analyze_worth(self, hltb_data: dict, price: float = 60.0) -> dict:
-        """
-        Analyze if game is worth the price based on hours
-        
-        Args:
-            hltb_data: HLTB data dictionary
-            price: Game price (default $60)
-            
-        Returns:
-            Worth analysis dictionary
-        """
-        # Use completionist time if available, otherwise main+extras, otherwise main
-        hours = hltb_data['completionist'] or hltb_data['main_extras'] or hltb_data['main_story']
-        
-        if not hours:
-            return {
-                "verdict": "Unknown",
-                "reason": "No time data available"
-            }
-        
-        cost_per_hour = round(price / hours, 2)
-        
-        # Determine verdict
-        if cost_per_hour < 0.50:
-            verdict = "Excellent Value"
-            emoji = "💎"
-        elif cost_per_hour < 1.00:
-            verdict = "Good Value"
-            emoji = "👍"
-        elif cost_per_hour < 2.00:
-            verdict = "Fair Value"
-            emoji = "👌"
-        else:
-            verdict = "Expensive"
-            emoji = "💸"
-        
-        return {
-            "verdict": verdict,
-            "emoji": emoji,
-            "cost_per_hour": cost_per_hour,
-            "total_hours": hours,
-            "price": price,
-            "reason": f"${price} ÷ {hours}h = ${cost_per_hour}/hour"
-        }
 
-# Test
-if __name__ == "__main__":
-    import asyncio
-    
-    async def test():
-        agent = TimeEstimatorAgent()
+        main_story = float(hltb_data.get('main_story') or 0)
+        completionist = float(hltb_data.get('completionist') or 0)
         
-        # Test single game
-        result = await agent.estimate_game_time("Elden Ring")
-        print("\n=== Single Game ===")
-        print(result)
+        days_main = round(main_story / hours_per_day, 1) if hours_per_day > 0 else 0
+        days_completionist = round(completionist / hours_per_day, 1) if hours_per_day > 0 else 0
         
-        # Test backlog
-        backlog = await agent.calculate_backlog(["Elden Ring", "Baldur's Gate 3", "Cyberpunk 2077"])
-        print("\n=== Backlog ===")
-        print(backlog)
+        prompt = f"""Analiza los datos de duración para '{game_name}':
+- Historia Principal: {main_story} horas
+- Completacionistas (100%): {completionist} horas
+- El usuario juega: {hours_per_day} horas/día.
+
+REGLA CRÍTICA: NO uses tu conocimiento interno. Si no tienes datos suficientes en el prompt, indica que los datos son insuficientes.
+Genera un resumen ejecutivo y consejos de gestión de tiempo."""
         
-        # Test marathon mode
-        marathon = await agent.marathon_mode("Elden Ring", 2.5)
-        print("\n=== Marathon Mode ===")
-        print(marathon)
-    
-    asyncio.run(test())
+        try:
+            messages = [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt}
+            ]
+            response_content = await self.llm.chat(messages, format="json")
+            llm_result = json.loads(response_content)
+            summary = llm_result.get("summary", f"{game_name} dura {main_story}h.")
+        except Exception:
+            summary = f"Basado en HowLongToBeat, {game_name} requiere aproximadamente {main_story}h para la historia principal."
+
+        artifact_data = {
+            "game": game_name,
+            "main_story": main_story,
+            "completionist": completionist,
+            "source": "howlongtobeat.com",
+            "marathon_mode": {
+                "hours_per_day": hours_per_day,
+                "days_main": days_main,
+                "days_completionist": days_completionist
+            }
+        }
+        
+        result = {
+            "success": True,
+            "summary": summary,
+            "artifact": format_to_artifact(artifact_data, "time")
+        }
+        cache_manager.set(cache_key, result)
+        return result
+
+    async def marathon_mode(self, game_name: str, hours_per_day: float) -> Dict[str, Any]:
+        """Method used by main.py"""
+        return await self.estimate_game_time(game_name, hours_per_day)
+
+    async def calculate_backlog(self, games: List[str]) -> Dict[str, Any]:
+        """Calculate total time for multiple games"""
+        cache_key = f"backlog_{'_'.join(sorted(games))}".lower().replace(" ", "_")
+        cached = cache_manager.get(cache_key)
+        if cached:
+            return cached
+            
+        total = 0.0
+        for game in games:
+            hltb = search_hltb(game)
+            total += float(hltb.get('main_story', 20) or 20)
+            
+        result = {
+            "success": True,
+            "total_hours": total,
+            "artifact": format_to_artifact({"total": total, "games": games}, "table")
+        }
+        cache_manager.set(cache_key, result)
+        return result

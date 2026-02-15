@@ -19,76 +19,70 @@ async def test_all():
     print("\n[1/5] Testing NewsScout...")
     try:
         news_agent = NewsScoutAgent()
-        result = await news_agent.search("Elden Ring")
-        if result['success']:
+        # Updated signature: game, query
+        result = await news_agent.search("Elden Ring", "latest news")
+        # Result is NewsResult (pydantic), access via attributes or .dict()
+        if result:
             print("[PASS] NewsScout OK")
-            print(f"   Summary length: {len(result.get('summary', ''))}")
+            print(f"   Summary: {result.summary[:50]}...")
         else:
-            print(f"[FAIL] NewsScout FAILED: {result.get('message')}")
+            print(f"[FAIL] NewsScout FAILED")
     except Exception as e:
         print(f"[FAIL] NewsScout EXCEPTION: {e}")
-        import traceback
-        traceback.print_exc()
 
     # Check 2: EventScout
     print("\n[2/5] Testing EventScout...")
     try:
         event_agent = EventScoutAgent()
         result = await event_agent.get_live_events()
-        if result['success']:
+        if result.get('success'):
             print("[PASS] EventScout OK")
-            print(f"   Live Events: {result['count']}")
+            print(f"   Live Events: {result.get('count', 0)}")
         else:
             print(f"[FAIL] EventScout FAILED")
     except Exception as e:
         print(f"[FAIL] EventScout EXCEPTION: {e}")
-        import traceback
-        traceback.print_exc()
 
     # Check 3: TimeEstimator
     print("\n[3/5] Testing TimeEstimator...")
     try:
         time_agent = TimeEstimatorAgent()
         result = await time_agent.estimate_game_time("Hollow Knight")
-        if result['success']:
+        if result.get('success'):
             print("[PASS] TimeEstimator OK")
-            print(f"   Main Story: {result['times']['main']}h")
+            # Result structure from updated agent
+            print(f"   Main Story: {result['artifact']['data']['main_story']}h")
         else:
-            print(f"[FAIL] TimeEstimator FAILED: {result.get('message')}")
+            print(f"[FAIL] TimeEstimator FAILED: {result.get('summary')}")
     except Exception as e:
         print(f"[FAIL] TimeEstimator EXCEPTION: {e}")
-        import traceback
-        traceback.print_exc()
 
     # Check 4: Chronos
     print("\n[4/5] Testing Chronos...")
     try:
         chronos_agent = ChronosAgent()
-        result = await chronos_agent.get_story("Celeste", "none")
-        if result['success']:
+        # Fixed method name: get_lore
+        result = await chronos_agent.get_lore("Celeste", "Madeline", "low")
+        if result.get('success'):
             print("[PASS] Chronos OK")
             print(f"   Summary: {result['summary'][:50]}...")
         else:
-            print(f"[FAIL] Chronos FAILED: {result.get('message')}")
+            print(f"[FAIL] Chronos FAILED")
     except Exception as e:
         print(f"[FAIL] Chronos EXCEPTION: {e}")
-        import traceback
-        traceback.print_exc()
 
     # Check 5: DealScout
     print("\n[5/5] Testing DealScout...")
     try:
         deal_agent = DealScoutAgent()
         result = await deal_agent.search_deals("Stardew Valley")
-        if result['success']:
+        if result.get('success'):
             print("[PASS] DealScout OK")
             print(f"   Deals found: {len(result['deals'])}")
         else:
-            print(f"[FAIL] DealScout FAILED")
+            print(f"[FAIL] DealScout FAILED: {result.get('summary')}")
     except Exception as e:
         print(f"[FAIL] DealScout EXCEPTION: {e}")
-        import traceback
-        traceback.print_exc()
 
     print("\n=== SYSTEM CHECK COMPLETE ===")
 

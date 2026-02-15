@@ -26,9 +26,10 @@ export interface Source {
 }
 
 export interface Artifact {
-    type: 'table' | 'build' | 'guide' | 'empty' | 'error';
+    type: 'table' | 'build' | 'guide' | 'empty' | 'error' | 'price' | 'time';
     display: string;
     timestamp: string;
+    data?: any;  // Optional data field for nested structures
     [key: string]: any;
 }
 
@@ -37,6 +38,7 @@ export interface StreamEvent {
     content?: string;
     artifact?: Artifact;
     sources?: Source[];
+    success?: boolean;  // Optional success flag
 }
 
 // Timeout configuration (10 minutes for Ollama which can be slow)
@@ -59,6 +61,7 @@ export class NexusService implements OnDestroy {
     private _isLoading = signal(false);
     private _thinkingStatus = signal<string>('');
     private _elapsedTime = signal<number>(0);
+    private _connectionStatus = signal<'online' | 'offline' | 'simulated' | 'checking'>('checking');
 
     // Public computed values
     readonly messages = this._messages.asReadonly();
@@ -66,11 +69,33 @@ export class NexusService implements OnDestroy {
     readonly isLoading = this._isLoading.asReadonly();
     readonly thinkingStatus = this._thinkingStatus.asReadonly();
     readonly elapsedTime = this._elapsedTime.asReadonly();
+    readonly connectionStatus = this._connectionStatus.asReadonly();
 
     readonly hasArtifact = computed(() => this._currentArtifact() !== null);
 
+    constructor() {
+        this.checkHealth();
+        // Poll health every 30 seconds
+        setInterval(() => this.checkHealth(), 30000);
+    }
+
     ngOnDestroy(): void {
         this.cleanup();
+    }
+
+    async checkHealth(): Promise<void> {
+        try {
+            const res = await fetch(`${this.apiUrl}/api/health`);
+            if (res.ok) {
+                const data = await res.json();
+                // If backend says simulated mode, reflect that
+                this._connectionStatus.set(data.mode === 'simulation' ? 'simulated' : 'online');
+            } else {
+                this._connectionStatus.set('offline');
+            }
+        } catch (e) {
+            this._connectionStatus.set('offline');
+        }
     }
 
     /**
@@ -179,6 +204,10 @@ export class NexusService implements OnDestroy {
                                     this._messages.update(msgs => [...msgs, assistantMessage!]);
 
                                     if (event.artifact) {
+                                        // Ensure artifact.data exists for components that expect it
+                                        if (!event.artifact.data) {
+                                            event.artifact.data = {};
+                                        }
                                         this._currentArtifact.set(event.artifact);
                                     }
                                     break;

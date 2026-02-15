@@ -5,7 +5,7 @@ from agents.tactician import TacticianAgent
 from agents.guide_navigator import GuideNavigatorAgent
 
 # Set dummy env vars if needed, or rely on system env
-os.environ["OLLAMA_MODEL"] = "llama3.2"
+# Ollama removed
 
 async def test_news_scout():
     print("\n--- Testing NewsScout (ES) ---")

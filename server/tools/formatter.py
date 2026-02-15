@@ -8,7 +8,7 @@ from datetime import datetime
 
 def format_to_artifact(
     data: dict,
-    template_type: Literal["table", "build", "guide"]
+    template_type: Literal["table", "build", "guide", "time", "price", "lore"]
 ) -> dict:
     """
     Transform raw data into a structured artifact for the frontend.
@@ -33,6 +33,12 @@ def format_to_artifact(
         return _format_build_artifact(data, base_artifact)
     elif template_type == "guide":
         return _format_guide_artifact(data, base_artifact)
+    elif template_type == "time":
+        return _format_time_artifact(data, base_artifact)
+    elif template_type == "price":
+        return _format_price_artifact(data, base_artifact)
+    elif template_type == "lore":
+        return _format_lore_artifact(data, base_artifact)
     else:
         return {**base_artifact, "data": data}
 
@@ -44,13 +50,20 @@ def _format_table_artifact(data: dict, base: dict) -> dict:
     
     # Determine columns from first item
     if items:
-        columns = list(items[0].keys())
+        # Sort logic: if 'Game' is present, put it first
+        keys = list(items[0].keys())
+        if "Game" in keys:
+            keys.remove("Game")
+            columns = ["Game"] + keys
+        else:
+            columns = keys
     else:
         columns = ["title", "date", "description", "url"]
     
     return {
         **base,
         "display": "table",
+        "title": data.get("title", "Tabla de Datos"),
         "columns": [
             {"key": col, "label": col.replace("_", " ").title()}
             for col in columns
@@ -146,6 +159,88 @@ def _format_guide_artifact(data: dict, base: dict) -> dict:
         "difficulty_color": _get_difficulty_color(data.get("difficulty", "medium")),
         "estimated_time": data.get("estimated_time"),
         "progressive_reveal": True
+    }
+
+
+def _format_time_artifact(data: dict, base: dict) -> dict:
+    """Format data as HLTB time bars artifact with strict schema"""
+    # Validate and ensure all required fields exist
+    marathon_mode = data.get("marathon_mode", {})
+    
+    return {
+        **base,
+        "display": "time_tracker",
+        "game": str(data.get("game", "Unknown")),
+        "image": data.get("image"),
+        "times": {
+            "main": float(data.get("main_story", 0)),
+            "extra": float(data.get("main_extras", 0)),
+            "completionist": float(data.get("completionist", 0))
+        },
+        "marathon_mode": {
+            "hours_per_day": float(marathon_mode.get("hours_per_day", 3.0)),
+            "days_main": float(marathon_mode.get("days_main", 0)),
+            "days_extras": float(marathon_mode.get("days_extras", 0)),
+            "days_completionist": float(marathon_mode.get("days_completionist", 0)),
+            "verdict": str(marathon_mode.get("verdict", "N/A"))
+        }
+    }
+
+
+def _format_price_artifact(data: dict, base: dict) -> dict:
+    """Format data as Price Hunter artifact with strict best deal calculation"""
+    deals = data.get("deals", [])
+    
+    # Recalculate is_best to ensure correctness
+    if deals:
+        min_price = min(d.get("price", float('inf')) for d in deals)
+        for deal in deals:
+            is_best = deal.get("price", float('inf')) == min_price
+            deal["is_best"] = is_best
+            if is_best:
+                deal["highlight"] = True
+                deal["color"] = "#39ff14"  # Neon Green
+            else:
+                deal["highlight"] = False
+                deal.pop("color", None)
+    
+    # Calculate savings
+    if len(deals) > 1:
+        prices = [d.get("price", 0) for d in deals]
+        savings = max(prices) - min(prices)
+    else:
+        savings = 0.0
+            
+    return {
+        **base,
+        "display": "price_comparison",
+        "game": str(data.get("game", "Unknown")),
+        "best_price": float(min(d.get("price", 0) for d in deals)) if deals else 0.0,
+        "currency": str(data.get("currency", "USD")),
+        "deals": deals,
+        "savings": round(float(savings), 2)
+    }
+
+
+def _format_lore_artifact(data: dict, base: dict) -> dict:
+    """Format data as Lore Master artifact with cleaned Mermaid content"""
+    mermaid_raw = data.get("mermaid_graph", "")
+    
+    # Clean Mermaid content - remove markdown code blocks
+    mermaid_clean = mermaid_raw.replace("```mermaid", "").replace("```", "").strip()
+    
+    # Ensure it starts with graph declaration
+    if mermaid_clean and not mermaid_clean.startswith("graph"):
+        mermaid_clean = "graph TD\n" + mermaid_clean
+    
+    return {
+        **base,
+        "display": "lore_graph",
+        "title": str(data.get("title", "Lore Map")),
+        "mermaid_content": mermaid_clean,
+        "spoiler_level": str(data.get("spoiler_level", "light")),
+        "nodes": data.get("nodes", []),
+        "summary": str(data.get("summary", ""))
     }
 
 

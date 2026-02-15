@@ -53,16 +53,6 @@ def extract_hours(text: str) -> float | None:
 def search_hltb(game_name: str) -> dict:
     """
     Search HowLongToBeat for game completion times
-    
-    Returns:
-        {
-            "game": str,
-            "main_story": float | None,
-            "main_extras": float | None,
-            "completionist": float | None,
-            "found": bool,
-            "source": str
-        }
     """
     # Normalize game name for cache
     cache_key = game_name.lower().strip()
@@ -73,7 +63,7 @@ def search_hltb(game_name: str) -> dict:
         print(f"[HLTB] Cache hit for '{game_name}'")
         return cache[cache_key]
     
-    print(f"[HLTB] Searching for '{game_name}'...")
+    print(f"[HLTB] Searching HowLongToBeat for '{game_name}'...")
     
     result = {
         "game": game_name,
@@ -86,13 +76,13 @@ def search_hltb(game_name: str) -> dict:
     }
     
     try:
-        # Search with DuckDuckGo
-        ddgs = DDGS()
-        query = f"{game_name} how long to beat"
-        results = ddgs.text(query, max_results=5)
+        # Strictly search with site filter
+        with DDGS() as ddgs:
+            query = f"site:howlongtobeat.com {game_name}"
+            results = list(ddgs.text(query, max_results=3))
         
         if not results:
-            print(f"[HLTB] No results found for '{game_name}'")
+            print(f"[HLTB] No results found on site for '{game_name}'")
             return result
         
         # Parse results to extract times
@@ -100,39 +90,30 @@ def search_hltb(game_name: str) -> dict:
         for r in results:
             all_text += r.get('body', '') + " " + r.get('title', '') + " "
         
-        # Look for specific patterns
-        # Main Story
+        # Refined patterns for HLTB specific display strings
         main_patterns = [
-            r'main\s+story[:\s]+(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)',
-            r'story[:\s]+(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)',
+            r'Main\s*Story[:\s]*(\d+(?:\.\d+)?)\s*(?:Hours|h)',
+            r'Story[:\s]*(\d+(?:\.\d+)?)\s*(?:Hours|h)',
         ]
-        for pattern in main_patterns:
-            match = re.search(pattern, all_text, re.IGNORECASE)
-            if match:
-                result['main_story'] = float(match.group(1))
-                break
-        
-        # Main + Extras
         extras_patterns = [
-            r'main\s*\+\s*extras?[:\s]+(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)',
-            r'extras?[:\s]+(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)',
+            r'Main\s*\+\s*Extras?[:\s]*(\d+(?:\.\d+)?)\s*(?:Hours|h)',
+            r'Extras[:\s]*(\d+(?:\.\d+)?)\s*(?:Hours|h)',
         ]
-        for pattern in extras_patterns:
-            match = re.search(pattern, all_text, re.IGNORECASE)
-            if match:
-                result['main_extras'] = float(match.group(1))
-                break
-        
-        # Completionist
         comp_patterns = [
-            r'completionist[:\s]+(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)',
-            r'100%[:\s]+(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)',
+            r'Completionist[:\s]*(\d+(?:\.\d+)?)\s*(?:Hours|h)',
+            r'100%[:\s]*(\d+(?:\.\d+)?)\s*(?:Hours|h)',
         ]
-        for pattern in comp_patterns:
-            match = re.search(pattern, all_text, re.IGNORECASE)
-            if match:
-                result['completionist'] = float(match.group(1))
-                break
+
+        def find_first_match(patterns, text):
+            for p in patterns:
+                m = re.search(p, text, re.IGNORECASE)
+                if m:
+                    return float(m.group(1))
+            return None
+
+        result['main_story'] = find_first_match(main_patterns, all_text)
+        result['main_extras'] = find_first_match(extras_patterns, all_text)
+        result['completionist'] = find_first_match(comp_patterns, all_text)
         
         # Mark as found if we got at least one metric
         result['found'] = any([
@@ -142,15 +123,14 @@ def search_hltb(game_name: str) -> dict:
         ])
         
         if result['found']:
-            print(f"[HLTB] Found data for '{game_name}': Main={result['main_story']}h, Extras={result['main_extras']}h, 100%={result['completionist']}h")
-            # Save to cache
+            print(f"[HLTB] Data acquired: Main={result['main_story']}h, Extras={result['main_extras']}h, 100%={result['completionist']}h")
             cache[cache_key] = result
             save_cache(cache)
         else:
-            print(f"[HLTB] Could not extract time data for '{game_name}'")
+            print(f"[HLTB] Could not find specific HLTB metrics in snippets for '{game_name}'")
         
     except Exception as e:
-        print(f"[HLTB] Error searching for '{game_name}': {e}")
+        print(f"[HLTB] Error: {e}")
     
     return result
 

@@ -8,17 +8,17 @@ import { interval, Subscription } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
 interface LiveEvent {
-    id: string;
-    name: string;
-    category: string;
-    is_live: boolean;
-    countdown_seconds: number;
+  id: string;
+  name: string;
+  category: string;
+  is_live: boolean;
+  countdown_seconds: number;
 }
 
 @Component({
-    selector: 'app-hype-bar',
-    imports: [CommonModule],
-    template: `
+  selector: 'app-hype-bar',
+  imports: [CommonModule],
+  template: `
     @if (liveEvent()) {
       <div class="hype-bar" [class]="getBarClass()">
         <div class="hype-content">
@@ -29,7 +29,7 @@ interface LiveEvent {
       </div>
     }
   `,
-    styles: [`
+  styles: [`
     .hype-bar {
       position: fixed;
       top: 0;
@@ -112,62 +112,58 @@ interface LiveEvent {
   `]
 })
 export class HypeBarComponent implements OnInit, OnDestroy {
-    private http = inject(HttpClient);
-    private apiUrl = 'http://localhost:8000/api/events';
+  private http = inject(HttpClient);
+  private apiUrl = 'http://localhost:8000/api/events';
 
-    liveEvent = signal<LiveEvent | null>(null);
-    private checkInterval?: Subscription;
+  liveEvent = signal<LiveEvent | null>(null);
+  private checkInterval?: Subscription;
 
-    ngOnInit() {
-        this.checkLiveEvents();
-        // Check every 30 seconds
-        this.checkInterval = interval(30000).subscribe(() => {
-            this.checkLiveEvents();
-        });
+  ngOnInit() {
+    // this.checkLiveEvents(); // Disabled to save quota (Tab Isolation)
+  }
+
+  ngOnDestroy() {
+    this.checkInterval?.unsubscribe();
+  }
+
+  async checkLiveEvents() {
+    try {
+      const response: any = await this.http.get(`${this.apiUrl}/live`).toPromise();
+
+      if (response.success && response.live_events.length > 0) {
+        this.liveEvent.set(response.live_events[0]);
+      } else {
+        this.liveEvent.set(null);
+      }
+    } catch (error) {
+      console.error('Error checking live events:', error);
     }
+  }
 
-    ngOnDestroy() {
-        this.checkInterval?.unsubscribe();
-    }
+  getBarClass(): string {
+    const event = this.liveEvent();
+    if (!event) return 'generic';
 
-    async checkLiveEvents() {
-        try {
-            const response: any = await this.http.get(`${this.apiUrl}/live`).toPromise();
+    const name = event.name.toLowerCase();
 
-            if (response.success && response.live_events.length > 0) {
-                this.liveEvent.set(response.live_events[0]);
-            } else {
-                this.liveEvent.set(null);
-            }
-        } catch (error) {
-            console.error('Error checking live events:', error);
-        }
-    }
+    if (name.includes('nintendo')) return 'nintendo';
+    if (name.includes('playstation') || name.includes('state of play')) return 'playstation';
+    if (name.includes('xbox')) return 'xbox';
 
-    getBarClass(): string {
-        const event = this.liveEvent();
-        if (!event) return 'generic';
+    return 'generic';
+  }
 
-        const name = event.name.toLowerCase();
+  getCategoryLabel(): string {
+    const event = this.liveEvent();
+    if (!event) return '';
 
-        if (name.includes('nintendo')) return 'nintendo';
-        if (name.includes('playstation') || name.includes('state of play')) return 'playstation';
-        if (name.includes('xbox')) return 'xbox';
+    const categoryLabels: Record<string, string> = {
+      'direct': 'SHOWCASE',
+      'awards': 'AWARDS',
+      'trailer': 'PREMIERE',
+      'conference': 'EVENT'
+    };
 
-        return 'generic';
-    }
-
-    getCategoryLabel(): string {
-        const event = this.liveEvent();
-        if (!event) return '';
-
-        const categoryLabels: Record<string, string> = {
-            'direct': 'SHOWCASE',
-            'awards': 'AWARDS',
-            'trailer': 'PREMIERE',
-            'conference': 'EVENT'
-        };
-
-        return categoryLabels[event.category] || 'LIVE';
-    }
+    return categoryLabels[event.category] || 'LIVE';
+  }
 }

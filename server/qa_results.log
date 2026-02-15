@@ -1,0 +1,70 @@
+2026-02-14 00:36:26,545 - INFO - ================================================================================
+2026-02-14 00:36:26,545 - INFO - GAMING NEXUS - QA MODEL COMPARISON
+2026-02-14 00:36:26,545 - INFO - Timestamp: 2026-02-14T00:36:26.545764
+2026-02-14 00:36:26,545 - INFO - ================================================================================
+2026-02-14 00:36:26,546 - INFO - TEST                           | MODEL      | TIME (s)   | STATUS              
+2026-02-14 00:36:26,546 - INFO - --------------------------------------------------------------------------------
+2026-02-14 00:36:26,690 - INFO - response: https://www.bing.com/search?q=Persona+5+Royal+how+long+to+beat 200
+2026-02-14 00:36:29,062 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 404 Not Found"
+2026-02-14 00:36:31,388 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 404 Not Found"
+2026-02-14 00:36:31,389 - INFO - Time2Play (TimeEstimator)      | ollama     | 4.84       | ✅ PASS              
+2026-02-14 00:36:31,505 - INFO - response: https://www.bing.com/search?q=Persona+5+Royal+how+long+to+beat 200
+2026-02-14 00:36:31,816 - INFO - Time2Play (TimeEstimator)      | gemini     | 0.43       | ✅ PASS              
+2026-02-14 00:36:31,939 - INFO - response: https://www.bing.com/search?q=site%3Astore.steampowered.com+Minecraft+price+buy 200
+2026-02-14 00:36:32,816 - INFO - response: https://www.bing.com/search?q=site%3Astore.steampowered.com+Minecraft+price+buy&first=11&FORM=PERE 200
+2026-02-14 00:36:33,669 - INFO - response: https://www.bing.com/search?q=site%3Astore.steampowered.com+Minecraft+price+buy&first=21&FORM=PERE1 200
+2026-02-14 00:36:34,528 - INFO - response: https://www.bing.com/search?q=site%3Astore.steampowered.com+Minecraft+price+buy&first=31&FORM=PERE2 200
+2026-02-14 00:36:35,381 - INFO - response: https://www.bing.com/search?q=site%3Astore.steampowered.com+Minecraft+price+buy&first=41&FORM=PERE3 200
+2026-02-14 00:36:36,235 - INFO - response: https://www.bing.com/search?q=site%3Amicrosoft.com+Minecraft+price+buy 200
+2026-02-14 00:36:37,088 - INFO - response: https://www.bing.com/search?q=site%3Amicrosoft.com+Minecraft+price+buy&first=11&FORM=PERE 200
+2026-02-14 00:36:37,945 - INFO - response: https://www.bing.com/search?q=site%3Amicrosoft.com+Minecraft+price+buy&first=21&FORM=PERE1 200
+2026-02-14 00:36:38,804 - INFO - response: https://www.bing.com/search?q=site%3Amicrosoft.com+Minecraft+price+buy&first=31&FORM=PERE2 200
+2026-02-14 00:36:39,661 - INFO - response: https://www.bing.com/search?q=site%3Amicrosoft.com+Minecraft+price+buy&first=41&FORM=PERE3 200
+2026-02-14 00:36:40,518 - INFO - response: https://www.bing.com/search?q=site%3Ainstant-gaming.com+Minecraft+price+buy 200
+2026-02-14 00:36:41,370 - INFO - response: https://www.bing.com/search?q=site%3Ainstant-gaming.com+Minecraft+price+buy&first=11&FORM=PERE 200
+2026-02-14 00:36:42,223 - INFO - response: https://www.bing.com/search?q=site%3Ainstant-gaming.com+Minecraft+price+buy&first=21&FORM=PERE1 200
+2026-02-14 00:36:43,076 - INFO - response: https://www.bing.com/search?q=site%3Ainstant-gaming.com+Minecraft+price+buy&first=31&FORM=PERE2 200
+2026-02-14 00:36:43,934 - INFO - response: https://www.bing.com/search?q=site%3Ainstant-gaming.com+Minecraft+price+buy&first=41&FORM=PERE3 200
+2026-02-14 00:36:43,958 - INFO - Price Hunter (DealScout)       | ollama     | 12.14      | ✅ PASS              
+2026-02-14 00:36:44,091 - INFO - response: https://www.bing.com/search?q=site%3Astore.steampowered.com+Minecraft+price+buy 200
+2026-02-14 00:36:45,061 - INFO - response: https://www.bing.com/search?q=site%3Astore.steampowered.com+Minecraft+price+buy&first=11&FORM=PERE 200
+2026-02-14 00:36:45,910 - INFO - response: https://www.bing.com/search?q=site%3Astore.steampowered.com+Minecraft+price+buy&first=21&FORM=PERE1 200
+2026-02-14 00:36:46,783 - INFO - response: https://www.bing.com/search?q=site%3Astore.steampowered.com+Minecraft+price+buy&first=31&FORM=PERE2 200
+2026-02-14 00:36:47,673 - INFO - response: https://www.bing.com/search?q=site%3Astore.steampowered.com+Minecraft+price+buy&first=41&FORM=PERE3 200
+2026-02-14 00:36:48,515 - INFO - response: https://www.bing.com/search?q=site%3Amicrosoft.com+Minecraft+price+buy 200
+2026-02-14 00:36:49,381 - INFO - response: https://www.bing.com/search?q=site%3Amicrosoft.com+Minecraft+price+buy&first=11&FORM=PERE 200
+2026-02-14 00:36:50,257 - INFO - response: https://www.bing.com/search?q=site%3Amicrosoft.com+Minecraft+price+buy&first=21&FORM=PERE1 200
+2026-02-14 00:36:51,135 - INFO - response: https://www.bing.com/search?q=site%3Amicrosoft.com+Minecraft+price+buy&first=31&FORM=PERE2 200
+2026-02-14 00:36:52,017 - INFO - response: https://www.bing.com/search?q=site%3Amicrosoft.com+Minecraft+price+buy&first=41&FORM=PERE3 200
+2026-02-14 00:36:52,871 - INFO - response: https://www.bing.com/search?q=site%3Ainstant-gaming.com+Minecraft+price+buy 200
+2026-02-14 00:36:53,720 - INFO - response: https://www.bing.com/search?q=site%3Ainstant-gaming.com+Minecraft+price+buy&first=11&FORM=PERE 200
+2026-02-14 00:36:54,583 - INFO - response: https://www.bing.com/search?q=site%3Ainstant-gaming.com+Minecraft+price+buy&first=21&FORM=PERE1 200
+2026-02-14 00:36:55,456 - INFO - response: https://www.bing.com/search?q=site%3Ainstant-gaming.com+Minecraft+price+buy&first=31&FORM=PERE2 200
+2026-02-14 00:36:56,322 - INFO - response: https://www.bing.com/search?q=site%3Ainstant-gaming.com+Minecraft+price+buy&first=41&FORM=PERE3 200
+2026-02-14 00:36:56,344 - INFO - Price Hunter (DealScout)       | gemini     | 12.39      | ✅ PASS              
+2026-02-14 00:36:56,499 - INFO - response: https://www.bing.com/search?q=Elden+Ring+Miquella+lore+story+explanation 200
+2026-02-14 00:36:58,872 - INFO - HTTP Request: POST http://localhost:11434/api/chat "HTTP/1.1 404 Not Found"
+2026-02-14 00:36:58,873 - INFO - Lore Master (Chronos)          | ollama     | 2.53       | ✅ PASS              
+2026-02-14 00:36:59,005 - INFO - response: https://www.bing.com/search?q=Elden+Ring+Miquella+lore+story+explanation 200
+2026-02-14 00:36:59,135 - INFO - Lore Master (Chronos)          | gemini     | 0.26       | ✅ PASS              
+2026-02-14 00:36:59,271 - INFO - response: https://www.bing.com/search?q=Clair+Obscur%3A+Expedition+33+best+weapons+build+meta+gaming+video+game+%28site%3Afextralife.com+OR+site%3Awiki.gg+OR+site%3Awowhead.com+OR+site%3Amobafire.com+OR+site%3Au.gg+OR+site%3Ad4builds.gg+OR+site%3Amaxroll.gg+OR+site%3Apoe2db.tw%29 200
+2026-02-14 00:36:59,284 - INFO - response: https://www.bing.com/search?q=Clair+Obscur%3A+Expedition+33+best+weapons+build+meta+gaming+video+game+%28site%3Areddit.com+OR+site%3Asteamcommunity.com+OR+site%3Aresetera.com+OR+site%3Agamefaqs.gamespot.com+OR+site%3Aforums.unrealengine.com+OR+site%3Astackoverflow.com%29 200
+2026-02-14 00:37:00,147 - INFO - response: https://www.bing.com/search?q=Clair+Obscur%3A+Expedition+33+best+weapons+build+meta+gaming+video+game+%28site%3Afextralife.com+OR+site%3Awiki.gg+OR+site%3Awowhead.com+OR+site%3Amobafire.com+OR+site%3Au.gg+OR+site%3Ad4builds.gg+OR+site%3Amaxroll.gg+OR+site%3Apoe2db.tw%29&first=11&FORM=PERE 200
+2026-02-14 00:37:01,001 - INFO - response: https://www.bing.com/search?q=Clair+Obscur%3A+Expedition+33+best+weapons+build+meta+gaming+video+game+%28site%3Afextralife.com+OR+site%3Awiki.gg+OR+site%3Awowhead.com+OR+site%3Amobafire.com+OR+site%3Au.gg+OR+site%3Ad4builds.gg+OR+site%3Amaxroll.gg+OR+site%3Apoe2db.tw%29&first=21&FORM=PERE1 200
+2026-02-14 00:37:01,871 - INFO - response: https://www.bing.com/search?q=Clair+Obscur%3A+Expedition+33+best+weapons+build+meta+gaming+video+game+%28site%3Afextralife.com+OR+site%3Awiki.gg+OR+site%3Awowhead.com+OR+site%3Amobafire.com+OR+site%3Au.gg+OR+site%3Ad4builds.gg+OR+site%3Amaxroll.gg+OR+site%3Apoe2db.tw%29&first=31&FORM=PERE2 200
+2026-02-14 00:37:02,733 - INFO - response: https://www.bing.com/search?q=Clair+Obscur%3A+Expedition+33+best+weapons+build+meta+gaming+video+game+%28site%3Afextralife.com+OR+site%3Awiki.gg+OR+site%3Awowhead.com+OR+site%3Amobafire.com+OR+site%3Au.gg+OR+site%3Ad4builds.gg+OR+site%3Amaxroll.gg+OR+site%3Apoe2db.tw%29&first=41&FORM=PERE3 200
+2026-02-14 00:37:02,767 - INFO - Tactician (CLR Strategy)       | ollama     | 3.63       | ✅ PASS              
+2026-02-14 00:37:02,936 - INFO - response: https://www.bing.com/search?q=Clair+Obscur%3A+Expedition+33+best+weapons+build+meta+gaming+video+game+%28site%3Afextralife.com+OR+site%3Awiki.gg+OR+site%3Awowhead.com+OR+site%3Amobafire.com+OR+site%3Au.gg+OR+site%3Ad4builds.gg+OR+site%3Amaxroll.gg+OR+site%3Apoe2db.tw%29 200
+2026-02-14 00:37:02,947 - INFO - response: https://www.bing.com/search?q=Clair+Obscur%3A+Expedition+33+best+weapons+build+meta+gaming+video+game+%28site%3Areddit.com+OR+site%3Asteamcommunity.com+OR+site%3Aresetera.com+OR+site%3Agamefaqs.gamespot.com+OR+site%3Aforums.unrealengine.com+OR+site%3Astackoverflow.com%29 200
+2026-02-14 00:37:03,807 - INFO - response: https://www.bing.com/search?q=Clair+Obscur%3A+Expedition+33+best+weapons+build+meta+gaming+video+game+%28site%3Afextralife.com+OR+site%3Awiki.gg+OR+site%3Awowhead.com+OR+site%3Amobafire.com+OR+site%3Au.gg+OR+site%3Ad4builds.gg+OR+site%3Amaxroll.gg+OR+site%3Apoe2db.tw%29&first=11&FORM=PERE 200
+2026-02-14 00:37:03,809 - INFO - response: https://www.bing.com/search?q=Clair+Obscur%3A+Expedition+33+best+weapons+build+meta+gaming+video+game+%28site%3Areddit.com+OR+site%3Asteamcommunity.com+OR+site%3Aresetera.com+OR+site%3Agamefaqs.gamespot.com+OR+site%3Aforums.unrealengine.com+OR+site%3Astackoverflow.com%29&first=11&FORM=PERE 200
+2026-02-14 00:37:04,646 - INFO - response: https://www.bing.com/search?q=Clair+Obscur%3A+Expedition+33+best+weapons+build+meta+gaming+video+game+%28site%3Afextralife.com+OR+site%3Awiki.gg+OR+site%3Awowhead.com+OR+site%3Amobafire.com+OR+site%3Au.gg+OR+site%3Ad4builds.gg+OR+site%3Amaxroll.gg+OR+site%3Apoe2db.tw%29&first=21&FORM=PERE1 200
+2026-02-14 00:37:04,663 - INFO - response: https://www.bing.com/search?q=Clair+Obscur%3A+Expedition+33+best+weapons+build+meta+gaming+video+game+%28site%3Areddit.com+OR+site%3Asteamcommunity.com+OR+site%3Aresetera.com+OR+site%3Agamefaqs.gamespot.com+OR+site%3Aforums.unrealengine.com+OR+site%3Astackoverflow.com%29&first=21&FORM=PERE1 200
+2026-02-14 00:37:05,517 - INFO - response: https://www.bing.com/search?q=Clair+Obscur%3A+Expedition+33+best+weapons+build+meta+gaming+video+game+%28site%3Afextralife.com+OR+site%3Awiki.gg+OR+site%3Awowhead.com+OR+site%3Amobafire.com+OR+site%3Au.gg+OR+site%3Ad4builds.gg+OR+site%3Amaxroll.gg+OR+site%3Apoe2db.tw%29&first=31&FORM=PERE2 200
+2026-02-14 00:37:05,526 - INFO - response: https://www.bing.com/search?q=Clair+Obscur%3A+Expedition+33+best+weapons+build+meta+gaming+video+game+%28site%3Areddit.com+OR+site%3Asteamcommunity.com+OR+site%3Aresetera.com+OR+site%3Agamefaqs.gamespot.com+OR+site%3Aforums.unrealengine.com+OR+site%3Astackoverflow.com%29&first=31&FORM=PERE2 200
+2026-02-14 00:37:06,382 - INFO - response: https://www.bing.com/search?q=Clair+Obscur%3A+Expedition+33+best+weapons+build+meta+gaming+video+game+%28site%3Afextralife.com+OR+site%3Awiki.gg+OR+site%3Awowhead.com+OR+site%3Amobafire.com+OR+site%3Au.gg+OR+site%3Ad4builds.gg+OR+site%3Amaxroll.gg+OR+site%3Apoe2db.tw%29&first=41&FORM=PERE3 200
+2026-02-14 00:37:06,396 - INFO - response: https://www.bing.com/search?q=Clair+Obscur%3A+Expedition+33+best+weapons+build+meta+gaming+video+game+%28site%3Areddit.com+OR+site%3Asteamcommunity.com+OR+site%3Aresetera.com+OR+site%3Agamefaqs.gamespot.com+OR+site%3Aforums.unrealengine.com+OR+site%3Astackoverflow.com%29&first=41&FORM=PERE3 200
+2026-02-14 00:37:06,403 - INFO - Tactician (CLR Strategy)       | gemini     | 3.64       | ✅ PASS              
+2026-02-14 00:37:06,403 - INFO - ================================================================================
+2026-02-14 00:37:06,403 - INFO - QA Run Complete. Results saved to: C:\Users\joelr\Desktop\ProyectoNexus\server\qa_results.log
+2026-02-14 00:37:06,404 - INFO - ================================================================================

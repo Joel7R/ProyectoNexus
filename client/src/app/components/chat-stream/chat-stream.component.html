@@ -1,0 +1,80 @@
+<div class="chat-container">
+
+    <!-- Messages Area -->
+    <div class="chat-messages" #messagesContainer>
+
+        <!-- Welcome Screen (if empty) -->
+        @if (nexusService.messages().length === 0) {
+        <div class="chat-welcome">
+            <div class="welcome-logo">💠</div>
+            <h2>NEXUS CORE</h2>
+            <p>SYSTEM ONLINE. AWAITING COMMANDS.</p>
+
+            <div class="quick-actions">
+                <button (click)="sendExample('Latest Elden Ring News')">Create News Report</button>
+                <button (click)="sendExample('Build Guide for Jinx (LoL)')">Analyze Character Build</button>
+                <button (click)="sendExample('Upcoming RPGs 2025')">Scan Release Calendar</button>
+            </div>
+        </div>
+        }
+
+        <!-- Message Loop -->
+        @for (msg of nexusService.messages(); track msg.id) {
+        <div class="message-wrapper" [class.user]="msg.role === 'user'" [class.nexus]="msg.role !== 'user'">
+
+            <!-- Avatar -->
+            <div class="avatar">
+                @if (msg.role === 'user') { 👤 }
+                @else if (msg.role === 'thinking') { ⚡ }
+                @else { 💠 }
+            </div>
+
+            <!-- Content -->
+            <div class="message-content">
+                <div class="meta">
+                    {{ msg.role === 'user' ? 'COMMANDER' : 'NEXUS AI' }} • {{ msg.timestamp | date:'HH:mm' }}
+                </div>
+
+                <div class="bubble" [innerHTML]="formatMessage(msg.content)"></div>
+
+                <!-- Sources (if any) -->
+                @if (msg.sources?.length) {
+                <div class="sources-list" style="margin-top: 5px; font-size: 0.8em; color: var(--text-muted);">
+                    @for (source of msg.sources; track source.url) {
+                    <a [href]="source.url" target="_blank" style="margin-right: 10px;">📄 {{ source.title }}</a>
+                    }
+                </div>
+                }
+            </div>
+        </div>
+        }
+
+        <!-- Loading Indicator -->
+        @if (nexusService.isLoading()) {
+        <div class="message-wrapper nexus">
+            <div class="avatar" style="animation: pulse 1s infinite">⚡</div>
+            <div class="message-content">
+                <div class="meta">NEXUS AI • NOW</div>
+                <div class="bubble" style="font-style: italic; color: var(--text-muted);">
+                    Processing Data Stream...
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area">
+        <form class="input-wrapper" (submit)="onSubmit($event)">
+            <textarea #chatInput rows="1" placeholder="Enter command or query..." [(ngModel)]="inputMessage"
+                name="message" (keydown.enter)="onEnter($event)"></textarea>
+
+            <button type="submit" class="send-btn" [disabled]="!inputMessage.trim() || nexusService.isLoading()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9L22 2" />
+                </svg>
+            </button>
+        </form>
+    </div>
+
+</div>

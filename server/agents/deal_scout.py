@@ -4,6 +4,8 @@ Searches and compares game prices across multiple stores
 """
 from typing import Dict, List, Any
 import re
+import asyncio
+from pydantic import BaseModel, Field
 try:
     from ddgs import DDGS
 except ImportError:
@@ -11,9 +13,27 @@ except ImportError:
 from datetime import datetime, timedelta
 import json
 from pathlib import Path
+from tools.formatter import format_to_artifact
+from utils.cache_manager import cache_manager
 
 # Cache file
 CACHE_FILE = Path(__file__).parent.parent / "cache" / "deals_cache.json"
+
+SYSTEM_PROMPT = """Eres 'Gaming Nexus - DealScout', un cazador de ofertas implacable.
+
+TU OBJETIVO:
+1. Analizar una lista de precios de videojuegos.
+2. Identificar la MEJOR oferta (menor precio).
+3. Generar un resumen atractivo que incite a la compra.
+
+FORMATO DE SALIDA (JSON):
+{
+    "summary": "¡Oferta histórica! Minecraft por solo $15 en Instant Gaming (-40%).",
+    "best_deal_store": "Instant Gaming",
+    "reasoning": "Es $5 más barato que Steam y Microsoft Store.",
+    "savings_text": "Ahorras el precio de un café ($5.00)"
+}
+"""
 
 class DealScoutAgent:
     """Agent for finding and comparing game prices"""
@@ -29,36 +49,36 @@ class DealScoutAgent:
             "domain": "store.epicgames.com",
             "icon": "🎯"
         },
-        "gog": {
-            "name": "GOG",
-            "domain": "gog.com",
-            "icon": "🕹️"
+        "eneba": {
+            "name": "Eneba",
+            "domain": "eneba.com",
+            "icon": "💎"
+        },
+        "g2a": {
+            "name": "G2A",
+            "domain": "g2a.com",
+            "icon": "🔸"
         },
         "instant_gaming": {
             "name": "Instant Gaming",
             "domain": "instant-gaming.com",
             "icon": "⚡"
+        },
+        "microsoft": {
+            "name": "Microsoft Store",
+            "domain": "microsoft.com",
+            "icon": "🪟"
         }
     }
     
     def __init__(self):
+        from llm_config import llm_manager
         self.name = "DealScout"
-        self.cache = self._load_cache()
+        self.llm = llm_manager
     
-    def _load_cache(self) -> dict:
-        """Load cached deals"""
-        if CACHE_FILE.exists():
-            with open(CACHE_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return {}
     
-    def _save_cache(self):
-        """Save deals to cache"""
-        CACHE_FILE.parent.mkdir(exist_ok=True)
-        with open(CACHE_FILE, 'w', encoding='utf-8') as f:
-            json.dump(self.cache, f, indent=2, ensure_ascii=False)
     
-    def _is_cache_valid(self, cached_data: dict, max_age_days: int = 7) -> bool:
+    def _is_cache_valid(self, cached_data: dict, max_age_days: int = 1) -> bool:
         """Check if cached data is still valid"""
         if 'cached_at' not in cached_data:
             return False
@@ -68,146 +88,189 @@ class DealScoutAgent:
         return age < timedelta(days=max_age_days)
     
     def _extract_price(self, text: str) -> float | None:
-        """Extract price from text"""
-        # Patterns for different currencies
+        """Extract price from text with enhanced pattern matching"""
+        # Enhanced patterns to capture various price formats
         patterns = [
-            r'\$(\d+(?:\.\d{2})?)',  # $59.99
-            r'(\d+(?:\.\d{2})?)\s*€',  # 59.99€
-            r'€\s*(\d+(?:\.\d{2})?)',  # € 59.99
-            r'(\d+(?:\.\d{2})?)\s*USD',  # 59.99 USD
-            r'(\d+(?:\.\d{2})?)\s*EUR',  # 59.99 EUR
+            r'\$\s*(\d+(?:\.\d{2})?)',           # $XX.XX
+            r'(\d+(?:\.\d{2})?)\s*\$',           # XX.XX$
+            r'(\d+(?:\.\d{2})?)\s*€',            # XX.XX€
+            r'€\s*(\d+(?:\.\d{2})?)',            # €XX.XX
+            r'(\d+(?:\.\d{2})?)\s*USD',          # XX.XX USD
+            r'(\d+(?:\.\d{2})?)\s*EUR',          # XX.XX EUR
+            r'(\d+,\d{2})\s*€',                  # XX,XX€ (European format)
         ]
         
         for pattern in patterns:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
-                return float(match.group(1))
+                price_str = match.group(1).replace(',', '.')
+                try:
+                    return float(price_str)
+                except ValueError:
+                    continue
         
         return None
     
-    async def search_deals(self, game_name: str) -> Dict[str, Any]:
-        """
-        Search for game prices across all stores
-        
-        Args:
-            game_name: Name of the game
+    async def _llm_price_estimation(self, game_name: str, text_fragments: List[str]) -> float | None:
+        """Use LLM to heuristically estimate price from text fragments"""
+        if not text_fragments:
+            return None
             
-        Returns:
-            Dictionary with deals from all stores
+        combined_text = "\n\n".join(text_fragments[:3])  # Use first 3 fragments
+        
+        prompt = f"""Analiza estos fragmentos de texto de búsqueda web para '{game_name}' y extrae el PRECIO más probable.
+
+Fragmentos:
+{combined_text[:1500]}
+
+Devuelve SOLO un JSON con:
+{{
+    "price": <número flotante>,
+    "currency": "USD",
+    "confidence": "high/medium/low"
+}}
+
+Si no encuentras ningún precio, devuelve {{"price": null}}."""
+
+        try:
+            messages = [
+                {"role": "system", "content": "Eres un experto en extracción de precios de videojuegos. Analiza el texto y extrae el precio de forma precisa."},
+                {"role": "user", "content": prompt}
+            ]
+            
+            response = await self.llm.chat(messages, format="json")
+            result = json.loads(response)
+            
+            price = result.get("price")
+            if price and isinstance(price, (int, float)):
+                print(f"[DealScout] LLM estimated price: ${price}")
+                return float(price)
+                
+        except Exception as e:
+            print(f"[DealScout] LLM price estimation failed: {e}")
+        
+        return None
+    
+    async def analyze(self, game_name: str, stores: List[str] = None) -> Dict[str, Any]:
         """
-        cache_key = game_name.lower().strip()
-        
-        # Check cache
-        if cache_key in self.cache and self._is_cache_valid(self.cache[cache_key]):
-            print(f"[DealScout] Cache hit for '{game_name}'")
-            return self.cache[cache_key]
-        
-        print(f"[DealScout] Searching deals for '{game_name}'...")
+        Search for deals and synthesize comparison (STRICT FILTERS)
+        """
+        cache_key = f"deals_{game_name.lower().replace(' ', '_')}"
+        cached = cache_manager.get(cache_key)
+        if cached:
+            return cached
+            
+        """
+        Search for deals and synthesize comparison (STRICT FILTERS)
+        """
+        # Strict search query combining requested domains
+        query = f'"{game_name}" site:eneba.com OR site:g2a.com OR site:instant-gaming.com OR site:store.steampowered.com'
         
         deals = []
-        reasoning = [f"Buscando precios para '{game_name}' en múltiples tiendas..."]
+        text_fragments = []
         
-        ddgs = DDGS()
+        print(f"[DealScout] Strict Scout: {game_name}")
         
-        for store_id, store_info in self.STORES.items():
-            try:
-                query = f"{game_name} price {store_info['name']}"
-                results = ddgs.text(query, max_results=3)
+        try:
+            with DDGS() as ddgs:
+                results = list(ddgs.text(query, max_results=8))
+            
+            for r in results:
+                href = r.get('href', '').lower()
                 
-                if not results:
-                    reasoning.append(f"✗ {store_info['name']}: Sin resultados")
+                # Identify store from domain
+                store_key = None
+                for k, v in self.STORES.items():
+                    if v['domain'] in href:
+                        store_key = k
+                        break
+                
+                if not store_key:
                     continue
+                    
+                text = f"{r.get('title')} {r.get('body')}"
+                price = self._extract_price(text)
                 
-                # Extract price from results
-                all_text = " ".join([r.get('body', '') + " " + r.get('title', '') for r in results])
-                price = self._extract_price(all_text)
-                
-                if price:
+                if price is not None:
                     deals.append({
-                        "store": store_info['name'],
-                        "store_id": store_id,
-                        "icon": store_info['icon'],
+                        "store": self.STORES[store_key]['name'],
+                        "store_id": store_key,
+                        "icon": self.STORES[store_key]['icon'],
                         "price": price,
-                        "currency": "USD",  # Simplified for now
-                        "url": results[0].get('href', '#'),
+                        "currency": "USD", 
+                        "url": r.get('href'),
                         "is_best": False
                     })
-                    reasoning.append(f"✓ {store_info['name']}: ${price}")
                 else:
-                    reasoning.append(f"✗ {store_info['name']}: Price not found")
-                    
-            except Exception as e:
-                print(f"[DealScout] Error searching {store_info['name']}: {e}")
-                reasoning.append(f"✗ {store_info['name']}: Error")
-        
-        # Find best deal
+                    text_fragments.append(f"Store: {self.STORES[store_key]['name']}\n{text}")
+
+        except Exception as e:
+            print(f"[DealScout] Search error: {e}")
+
+        # Fallback for stores where regex failed but we have text
+        if text_fragments and not any(d['store_id'] in ['eneba', 'g2a', 'instant_gaming'] for d in deals):
+            llm_price = await self._llm_price_estimation(game_name, text_fragments)
+            if llm_price:
+                deals.append({
+                    "store": "Precio detectado (IA)",
+                    "store_id": "ai_detected",
+                    "icon": "🔍",
+                    "price": llm_price,
+                    "currency": "USD",
+                    "url": None,
+                    "is_best": False
+                })
+
         best_deal = None
+        savings = 0
+        
         if deals:
             deals.sort(key=lambda x: x['price'])
             best_deal = deals[0]
             best_deal['is_best'] = True
             
-            # Calculate savings
             if len(deals) > 1:
-                highest_price = max(d['price'] for d in deals)
-                savings = highest_price - best_deal['price']
-                savings_percent = (savings / highest_price) * 100
-            else:
-                savings = 0
-                savings_percent = 0
+                highest = max(d['price'] for d in deals)
+                savings = highest - best_deal['price']
+
+        if deals:
+            prompt = f"""Genera un resumen para '{game_name}' con estas ofertas:
+{json.dumps(deals, indent=2)}
+Incluye qué tienda es la granadora y cuánto se ahorra vs el máximo."""
+            
+            try:
+                messages = [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt}
+                ]
+                response_content = await self.llm.chat(messages, format="json")
+                llm_result = json.loads(response_content)
+                summary = llm_result.get("summary", f"Mejor precio: {best_deal['store']} ${best_deal['price']}")
+            except:
+                summary = f"Mejor precio encontrado en {best_deal['store']} por ${best_deal['price']}"
         else:
-            savings = 0
-            savings_percent = 0
+            summary = f"No encontré ofertas en las tiendas seleccionadas (Eneba, G2A, Instant Gaming, Steam) para '{game_name}'."
+
+        artifact_data = {
+            "game": game_name,
+            "best_price": best_deal['price'] if best_deal else 0,
+            "currency": "USD",
+            "deals": deals,
+            "savings": round(savings, 2)
+        }
         
         result = {
-            "success": len(deals) > 0,
-            "game": game_name,
-            "deals": deals,
-            "best_deal": best_deal,
-            "savings": round(savings, 2) if savings else 0,
-            "savings_percent": round(savings_percent, 1) if savings_percent else 0,
-            "reasoning": reasoning,
-            "cached_at": datetime.now().isoformat()
+            "success": bool(deals),
+            "summary": summary,
+            "artifact": format_to_artifact(artifact_data, "price"),
+            "deals": deals
         }
-        
-        # Cache result
-        if result['success']:
-            self.cache[cache_key] = result
-            self._save_cache()
-        
+        cache_manager.set(cache_key, result)
         return result
-    
-    async def compare_stores(self, game_name: str, store_ids: List[str]) -> Dict[str, Any]:
-        """
-        Compare prices for specific stores only
-        
-        Args:
-            game_name: Name of the game
-            store_ids: List of store IDs to compare
-            
-        Returns:
-            Comparison data
-        """
-        all_deals = await self.search_deals(game_name)
-        
-        if not all_deals['success']:
-            return all_deals
-        
-        # Filter to requested stores
-        filtered_deals = [d for d in all_deals['deals'] if d['store_id'] in store_ids]
-        
-        # Recalculate best deal
-        if filtered_deals:
-            filtered_deals.sort(key=lambda x: x['price'])
-            for deal in filtered_deals:
-                deal['is_best'] = False
-            filtered_deals[0]['is_best'] = True
-        
-        return {
-            **all_deals,
-            "deals": filtered_deals,
-            "best_deal": filtered_deals[0] if filtered_deals else None
-        }
+
+    async def search_deals(self, game_name: str) -> Dict[str, Any]:
+        """Alias for convenience"""
+        return await self.analyze(game_name)
 
 # Test
 if __name__ == "__main__":
@@ -215,21 +278,9 @@ if __name__ == "__main__":
     
     async def test():
         agent = DealScoutAgent()
+        print("\n=== Test Minecraft Price Hunter ===")
+        result = await agent.analyze("Minecraft")
+        print(f"Summary: {result['summary']}")
+        print(f"Deals: {len(result['deals'])}")
         
-        # Test search
-        result = await agent.search_deals("Elden Ring")
-        print("\n=== Deal Search ===")
-        print(f"Game: {result['game']}")
-        print(f"Found {len(result['deals'])} deals")
-        
-        if result['best_deal']:
-            print(f"\nBest Deal:")
-            print(f"  {result['best_deal']['store']}: ${result['best_deal']['price']}")
-            print(f"  Save: ${result['savings']} ({result['savings_percent']}%)")
-        
-        print(f"\nAll Deals:")
-        for deal in result['deals']:
-            marker = "🏆" if deal['is_best'] else "  "
-            print(f"{marker} {deal['icon']} {deal['store']}: ${deal['price']}")
-    
     asyncio.run(test())

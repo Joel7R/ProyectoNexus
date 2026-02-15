@@ -12,6 +12,6 @@ export const routes: Routes = [
     { path: 'event-hub', loadComponent: () => import('./components/event-hub/event-hub.component').then(m => m.EventHubComponent) },
     { path: 'patch-analyst', loadComponent: () => import('./components/patch-analyst/patch-analyst.component').then(m => m.PatchAnalystComponent) },
     { path: 'chat', component: ChatStreamComponent },
-    { path: '', redirectTo: 'news', pathMatch: 'full' },
-    { path: '**', redirectTo: 'news' } // Wildcard route
+    { path: '', redirectTo: 'chat', pathMatch: 'full' },
+    { path: '**', redirectTo: 'chat' } // Wildcard route
 ];
